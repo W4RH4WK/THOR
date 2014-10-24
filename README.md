@@ -1,4 +1,3 @@
-Thor
-====
+# THOR
 
 The Horrific Omnipotent Rootkit
