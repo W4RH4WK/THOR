@@ -5,7 +5,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 
-#include "internals.h"
+#include "fs/proc/internal.h"
 
 #define LOG_TAG "THOR: "
 #define LOG_DEBUG(msg) printk(KERN_DEBUG LOG_TAG msg "\n")
