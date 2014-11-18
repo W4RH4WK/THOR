@@ -117,7 +117,7 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
     return count;
 }
 
-
+// ------------------------------------------------------------ PROCROOT
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 {
 #if 0
