@@ -9,10 +9,20 @@
 
 #include "fs/proc/internal.h"
 
+#define THOR_DEBUG 1
+
 #define LOG_TAG "THOR: "
-#define LOG_DEBUG(msg) printk(KERN_DEBUG LOG_TAG msg "\n")
-#define LOG_ERROR(msg) printk(KERN_ERR LOG_TAG msg "\n")
-#define LOG_INFO(msg)  printk(KERN_INFO LOG_TAG msg "\n")
+
+#if THOR_DEBUG
+#   define LOG_DEBUG(format, args...) \
+        printk(KERN_DEBUG LOG_TAG format "\n", ##args);
+#else
+#   define LOG_DEBUG(format, args...) do {} while(0);
+#endif
+#define LOG_ERROR(format, args...) \
+    printk(KERN_ERR LOG_TAG format "\n", ##args);
+#define LOG_INFO(format, args...) \
+    printk(KERN_INFO LOG_TAG format "\n", ##args);
 
 #define THOR_PROCFILE "thor"
 
