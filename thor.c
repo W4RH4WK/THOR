@@ -12,6 +12,8 @@
 #define LOG_ERROR(msg) printk(KERN_ERR LOG_TAG msg "\n")
 #define LOG_INFO(msg)  printk(KERN_INFO LOG_TAG msg "\n")
 
+#define THOR_PROCFILE "thor"
+
 // ------------------------------------------------------------ PROTOTYPES
 static int __init thor_init(void);
 static int __init procfile_init(void);
@@ -46,7 +48,7 @@ static int __init thor_init(void)
 static int __init procfile_init(void)
 {
     // allocate file in proc
-    procfile = proc_create("thor", 0666, NULL, &procfile_fops);
+    procfile = proc_create(THOR_PROCFILE, 0666, NULL, &procfile_fops);
     if (procfile == NULL) {
         LOG_ERROR("could not create proc entry");
         return -1;
