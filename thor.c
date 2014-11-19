@@ -25,7 +25,8 @@ static int __init prochidder_init(void);
 static int __init filehidder_init(void);
 static void prochidder_cleanup(void);
 static void filehidder_cleanup(void);
-static void __exit thor_cleanup(void);
+static void __exit thor_exit(void);
+static void thor_cleanup(void);
 static int procfile_open(struct inode *inode, struct file *file);
 static int procfile_read(struct seq_file *m, void *v);
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
@@ -348,7 +349,7 @@ static void clear_pid_list(void)
     }
 }
 // ------------------------------------------------------------ CLEANUP
-static void __exit thor_cleanup(void)
+static void thor_cleanup(void)
 {
     procfile_cleanup();
     prochidder_cleanup();
@@ -389,8 +390,13 @@ static void filehidder_cleanup(void)
     clear_file_list();
 }
 
+static void __exit thor_exit(void)
+{
+    thor_cleanup();
+}
+
 module_init(thor_init);
-module_exit(thor_cleanup);
+module_exit(thor_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Alex Hirsch (W4RH4WK) <alexander.hirsch@student.uibk.ac.at>");
