@@ -7,7 +7,7 @@
 #include <linux/ptrace.h>
 #include <linux/slab.h>
 
-#include "fs/proc/internal.h"
+#include <fs/proc/internal.h>
 
 #include "logging.h"
 
