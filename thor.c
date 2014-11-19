@@ -90,11 +90,6 @@ static int __init procfile_init(void)
 
 static int __init prochidder_init(void)
 {
-    if (procfile == NULL) {
-        LOG_ERROR("procfile not set");
-        return -1;
-    }
-
     // insert our modified iterate for /proc
     procroot = procfile->parent;
     proc_fops = procroot->proc_fops;
