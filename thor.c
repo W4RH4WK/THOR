@@ -131,7 +131,6 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         tmp->name = (char*)kmalloc(count-2, GFP_KERNEL);
         memcpy(tmp->name, buffer+2, count-2);
         tmp->name[count-3] = 0;
-        LOG_DEBUG("a:%s",tmp->name);
         list_add(&(tmp->list), &(pid_list.list));
     }
     else if(0 == strncmp(buffer, "root", MIN(4, count)))
