@@ -5,7 +5,7 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 
-// -------------------------------------------------- MACROS
+// ------------------------------------------------------------ MACROS
 #define MIN(a,b) \
    ({ typeof (a) _a = (a); \
       typeof (b) _b = (b); \
