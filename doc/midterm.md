@@ -43,7 +43,7 @@ compromised, and lock you out.
     - open ports
     - suspicious processes
     - files
-- **hides its own presents**
+- **hides its own presences**
 
 ## Why Kernel Module
 
@@ -69,7 +69,8 @@ administration tools useless.
 
 - little example code for up2date kernels
 - Headers do not export enough, hence complete source is required
-- hijacking systemcalls is not really encouraged by the developers
+- hijacking systemcalls is not really encouraged by the developers (race
+  conditions / undefined behaviour)
     - *yeah, no shit sherlock*
 
 ## Current State
