@@ -78,6 +78,7 @@ administration tools useless.
 - communication using file in `/proc`
 - basic hiding of files by name
 - basic hiding of processes by PID
+- root shell
 - hiding of sockets ... work in progress
 - working in 3.14 (Arch LTS) and 3.17 (Arch Current)
 
