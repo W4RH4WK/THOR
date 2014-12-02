@@ -1,24 +1,26 @@
-% THOR\
-  The ~~Horrific~~ Hopefully Omnipotent Rootkit
-% Alex Hirsch
-  FraJo Haider
-% 2014-12-01
+---
+title: 'THOR'
+subtitle: 'The ~~Horrific~~ Hopefully Omnipotent Rootkit'
+author: [
+    Alex Hirsch,
+    FraJo Haider,
+]
+date: 2014-12-01
+---
 
 ## The Linux Kernel
 
-\centerline{\includegraphics[width=300px]{gfx/kernel.png}} [^1]
-
-[^1]: <http://sysplay.in/blog/linux-device-drivers/2013/02>
+\centerline{\includegraphics[height=170px]{gfx/kernel.png}}
+\tiny{source: \url{http://sysplay.in/blog/linux-device-drivers/2013/02}}
 
 ## Internals
 
-\centerline{\includegraphics[width=280px]{gfx/kernel_map.png}} [^2]
-
-[^2]: <http://en.wikipedia.org/wiki/Linux_kernel>
+\centerline{\includegraphics[height=170px]{gfx/kernel_map.png}}
+\tiny{source \url{http://en.wikipedia.org/wiki/Linux_kernel}}
 
 ## Dafuq?
 
-\centerline{\includegraphics[width=280px]{gfx/dafuq.jpg}}
+\centerline{\includegraphics[height=180px]{gfx/dafuq.jpg}}
 
 ## Okay Okay ... Imagine
 
@@ -34,7 +36,7 @@ compromised, and lock you out.
 
 ## Solution: **Rootkit**
 
-\centerline{\includegraphics[width=200px]{gfx/rootkit.jpg}}
+\centerline{\includegraphics[height=180px]{gfx/rootkit.jpg}}
 
 ## Main Usage
 
@@ -63,7 +65,7 @@ administration tools useless.
 
 ## Problems
 
-\centerline{\includegraphics[width=250px]{gfx/problems.jpg}}
+\centerline{\includegraphics[height=180px]{gfx/problems.jpg}}
 
 ## Problems
 
@@ -82,7 +84,7 @@ administration tools useless.
 - hiding of sockets ... work in progress
 - working in 3.14 (Arch LTS) and 3.17 (Arch Current)
 
-## Example: Injection `prochidder_init()`
+## `prochidder_init()`
 
 ```{.c .numberLines}
 static int __init prochidder_init(void)
@@ -105,7 +107,7 @@ static int __init prochidder_init(void)
 }
 ```
 
-## Injection `proc_iterate()`
+## `proc_iterate()`
 
 ```{.c .numberLines}
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
@@ -130,7 +132,7 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 }
 ```
 
-## new `proc_filldir()`
+## `proc_filldir()`
 
 ```{.c .numberLines}
 static int thor_proc_filldir(void *buf, const char *name, int namelen,
@@ -155,4 +157,4 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen,
 
 Github: <http://git.io/ZwNdCQ>
 
-\centerline{\includegraphics[width=150px]{gfx/qrcode.png}}
+\centerline{\includegraphics[height=160px]{gfx/qrcode.png}}

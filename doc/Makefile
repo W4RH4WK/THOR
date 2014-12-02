@@ -1,10 +1,9 @@
 midterm.pdf: midterm.md
 	pandoc $^ \
 		--standalone \
-		--filter pandoc_exec \
 		--to beamer \
+		--filter pandoc_exec \
 		--template tpl.tex \
-		--variable colortheme:seahorse \
 		--output $@
 
 clean:

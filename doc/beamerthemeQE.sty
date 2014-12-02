@@ -1,0 +1,39 @@
+% Copyright 2010 by Philipp Zech
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+
+
+% -------------------------------------------------------------------------
+% introduce options
+\DeclareOptionBeamer{compress}{\beamer@compresstrue}
+
+\newif\ifbeamer@dark
+\beamer@darkfalse
+\DeclareOptionBeamer{dark}{\beamer@darktrue}
+
+\newif\ifbeamer@darktitle
+\beamer@darktitlefalse
+\DeclareOptionBeamer{darktitle}{\beamer@darktitletrue}
+
+\newif\ifbeamer@framenumber
+\beamer@framenumberfalse
+\DeclareOptionBeamer{framenumber}{\beamer@framenumbertrue}
+
+\ProcessOptionsBeamer
+% -------------------------------------------------------------------------
+
+\mode<presentation>
+
+\useinnertheme{QE}
+\usefonttheme {QE}
+\usecolortheme{QE}
+\useoutertheme{QE}
+
+\mode
+<all>
+\setbeamertemplate{navigation symbols}{}
+\usepackage[T1]{fontenc}
+\usefonttheme{professionalfonts}

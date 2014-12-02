@@ -1,0 +1,53 @@
+% Copyright 2010 by Philipp Zech
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+
+\mode<presentation>
+
+\definecolor{uiorange}{RGB}{237,92,0}
+
+% ----------------------------------------------------------------------------
+% *** TITLE PAGE <<<
+% ----------------------------------------------------------------------------
+\defbeamertemplate*{title page}{qe theme}
+{
+  \vspace{-2.8cm}
+  \centering\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par%
+  \ifx\insertsubtitle\@empty%
+  \else%
+    \vskip2ex%
+    {\centering\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+  \fi%
+  \ifx\insertauthor\@empty%
+  \else%
+    \vskip2ex%
+    {\centering\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}%
+  \fi%
+   \ifx\insertdate\@empty%
+  \else%
+    \vskip2ex%
+    {\centering\usebeamerfont{author}\usebeamercolor[fg]{author}\insertdate\par}%
+  \fi%
+  \vspace{0.5cm}
+  \small{\centering Quality and Security Program}
+  \vfill%
+}
+% ----------------------------------------------------------------------------
+% *** END TITLE PAGE >>>
+% ----------------------------------------------------------------------------
+
+
+% ----------------------------------------------------------------------------
+% *** BLOCKS <<<
+% ----------------------------------------------------------------------------
+\setbeamertemplate{blocks}[rounded]
+% ----------------------------------------------------------------------------
+% *** END BLOCKS >>>
+% ----------------------------------------------------------------------------
+
+
+\mode
+<all>
