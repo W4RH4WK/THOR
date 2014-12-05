@@ -12,10 +12,13 @@
         printk(KERN_ERR LOG_TAG format "\n", ##args);
 #   define LOG_INFO(format, args...) \
         printk(KERN_INFO LOG_TAG format "\n", ##args);
+#   define LOG_WARN(format, args...) \
+        printk(KERN_WARNING LOG_TAG format "\n", ##args);
 #else
 #   define LOG_DEBUG(format, args...) do {} while(0);
 #   define LOG_ERROR(format, args...) do {} while(0);
 #   define LOG_INFO(format, args...) do {} while(0);
+#   define LOG_WARN(format, args...) do {} while(0);
 #endif
 
 #endif
