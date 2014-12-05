@@ -11,6 +11,20 @@ to build this rootkit since unexported code is used.
 Just make sure `/usr/src/linux` points to the linux source directory of the
 target kernel. Or you could simply change the `Makefile`.
 
+## How to Setup (Arch)
+
+    # pacman -S abs linux-headers
+    # abs
+    # cd /var/abs/core/linux
+    # makepkg -o --asroot
+    # ln -s /var/abs/core/linux/src/linux-3.17 /usr/src/linux
+
+## How to Build
+
+    $ cd /path/to/thor
+    $ make
+    # insmod thor.ko
+
 ## How to Use
 
     usage:
