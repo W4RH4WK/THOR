@@ -1,5 +1,5 @@
-#ifndef __LOGGING_H__
-#define __LOGGING_H__
+#ifndef LOGGING_H
+#define LOGGING_H
 
 #define THOR_DEBUG 1
 
@@ -18,5 +18,4 @@
 #   define LOG_INFO(format, args...) do {} while(0);
 #endif
 
-#endif /* __LOGGING_H__ */
-
+#endif
