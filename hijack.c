@@ -20,6 +20,7 @@ void hijack(void *function, void *new_function)
 {
     struct _hijack_list *tmp;
     int32_t jmp;
+
     bool found = false;
 
     list_for_each_entry(tmp, &(hijack_list.list), list) {
@@ -33,7 +34,7 @@ void hijack(void *function, void *new_function)
     {
         tmp = (struct _hijack_list*)kmalloc(sizeof(struct _hijack_list), GFP_KERNEL);
         tmp->function = function;
-#if CONFIG_X86
+#if defined(CONFIG_X86)
         /* store the first instructions as we overwrite them */
         tmp->first_instructions_size = 5;
         tmp->first_instructions = (char*)kmalloc(tmp->first_instructions_size, GFP_KERNEL);
@@ -44,8 +45,7 @@ void hijack(void *function, void *new_function)
         list_add(&(tmp->list), &(hijack_list.list));
     }
 
-#if CONFIG_X86
-
+#if defined(CONFIG_X86)
     /* calculate the distance to our new function */
     jmp = (int32_t)(new_function - function);
 
@@ -85,7 +85,7 @@ void unhijack(void *function)
     }
 
     set_addr_rw(function);
-#if CONFIG_X86
+#if defined(CONFIG_X86)
     memcpy(function, tmp->first_instructions, tmp->first_instructions_size);
 #else
 # error architecture not yet supported

