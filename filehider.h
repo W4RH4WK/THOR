@@ -4,7 +4,7 @@
 /* initialize file hider module */
 int filehider_init(void);
 
-/* cleanup proc hider module */
+/* cleanup file hider module */
 void filehider_cleanup(void);
 
 /* add file to hiding list */
