@@ -1,8 +1,11 @@
+#include "hijack.h"
+
 #include "helper.h"
 #include "logging.h"
 
 #include <linux/slab.h>
 
+/* node for hijack list */
 struct _hijack_list {
     void *function;
     char *first_instructions;
@@ -13,9 +16,27 @@ struct _hijack_list {
 /* hijack list */
 static struct _hijack_list hijack_list;
 
-/* hijack a given function (make it jump to new_function) */
-/* stores information about the hijack in hijack_list which
- * must be cleared with hijack_cleanup upon exit (ex. rmmod) */
+int hijack_init(void)
+{
+    INIT_LIST_HEAD(&hijack_list.list);
+
+    return 0;
+}
+
+void hijack_cleanup(void)
+{
+    struct _hijack_list *tmp;
+    struct list_head *pos, *q;
+
+    list_for_each_safe(pos, q, &(hijack_list.list)) {
+        tmp = list_entry(pos, struct _hijack_list, list);
+        unhijack(tmp->function);
+        list_del(pos);
+        kfree(tmp->first_instructions);
+        kfree(tmp);
+    }
+}
+
 void hijack(void *function, void *new_function)
 {
     struct _hijack_list *tmp;
@@ -30,14 +51,13 @@ void hijack(void *function, void *new_function)
         }
     }
 
-    if(!found)
-    {
-        tmp = (struct _hijack_list*)kmalloc(sizeof(struct _hijack_list), GFP_KERNEL);
+    if (!found) {
+        tmp = (struct _hijack_list*) kmalloc(sizeof(struct _hijack_list), GFP_KERNEL);
         tmp->function = function;
 #if defined(CONFIG_X86)
         /* store the first instructions as we overwrite them */
         tmp->first_instructions_size = 5;
-        tmp->first_instructions = (char*)kmalloc(tmp->first_instructions_size, GFP_KERNEL);
+        tmp->first_instructions = (char*) kmalloc(tmp->first_instructions_size, GFP_KERNEL);
         memcpy(tmp->first_instructions, function, tmp->first_instructions_size);
 #else
 # error architecture not yet supported
@@ -47,7 +67,7 @@ void hijack(void *function, void *new_function)
 
 #if defined(CONFIG_X86)
     /* calculate the distance to our new function */
-    jmp = (int32_t)(new_function - function);
+    jmp = (int32_t) (new_function - function);
 
     set_addr_rw(function);
 
@@ -66,7 +86,6 @@ void hijack(void *function, void *new_function)
 #endif
 }
 
-/* unhijackes a given function if it has been hijacked previously */
 void unhijack(void *function)
 {
     struct _hijack_list *tmp;
@@ -79,7 +98,7 @@ void unhijack(void *function)
         }
     }
 
-    if(!found) {
+    if (!found) {
         LOG_WARN("unhijack: function %p not found, cannot unhijack", function);
         return;
     }
@@ -92,28 +111,3 @@ void unhijack(void *function)
 #endif
     set_addr_ro(function);
 }
-
-/* initialize the hijack_list */
-int hijack_init(void)
-{
-    INIT_LIST_HEAD(&hijack_list.list);
-
-    return 0;
-}
-
-/* cleanup, release hijack_list and all the hijack information it
- * stores */
-void hijack_cleanup(void)
-{
-    struct _hijack_list *tmp;
-    struct list_head *pos, *q;
-
-    list_for_each_safe(pos, q, &(hijack_list.list)) {
-        tmp = list_entry(pos, struct _hijack_list, list);
-        unhijack(tmp->function);
-        list_del(pos);
-        kfree(tmp->first_instructions);
-        kfree(tmp);
-    }
-}
-

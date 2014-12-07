@@ -45,7 +45,7 @@ int filehider_init(void)
     struct file *filep_etc;
 
     filep_etc = filp_open("/etc", O_RDONLY, 0);
-    if(filep_etc == NULL) {
+    if (filep_etc == NULL) {
         LOG_ERROR("could not open /etc");
         return -1;
     }

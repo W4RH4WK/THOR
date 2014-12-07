@@ -148,7 +148,7 @@ void remove_from_pid_list(const char *name, unsigned int len)
 
     list_for_each_safe(pos, q, &(pid_list.list)) {
         tmp = list_entry(pos, struct _pid_list, list);
-        if(strncmp(tmp->name, name, len-1) == 0) {
+        if (strncmp(tmp->name, name, len-1) == 0) {
             list_del(pos);
             kfree(tmp->name);
             kfree(tmp);
