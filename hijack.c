@@ -40,7 +40,10 @@ void hijack_cleanup(void)
 void hijack(void *function, void *new_function)
 {
     struct _hijack_list *tmp;
+#if defined(CONFIG_X86)
     int32_t jmp;
+    char the_jump[5];
+#endif
 
     bool found = false;
 
@@ -60,7 +63,7 @@ void hijack(void *function, void *new_function)
         tmp->first_instructions = (char*) kmalloc(tmp->first_instructions_size, GFP_KERNEL);
         memcpy(tmp->first_instructions, function, tmp->first_instructions_size);
 #else
-# error architecture not yet supported
+# error architecture not supported yet
 #endif
         list_add(&(tmp->list), &(hijack_list.list));
     }
@@ -69,20 +72,15 @@ void hijack(void *function, void *new_function)
     /* calculate the distance to our new function */
     jmp = (int32_t) (new_function - function);
 
-    set_addr_rw(function);
+    the_jump[0] = 0xE9;
+    the_jump[1] = (jmp & 0xFF);
+    the_jump[2] = (jmp & 0xFF00) >> 8;
+    the_jump[3] = (jmp & 0xFF0000) >> 16;
+    the_jump[4] = jmp >> 24;
 
-    /* x86 rjmp */
-    ((char*)function)[0] = 0xE9;
-
-    /* store jump address as little endian */
-    ((char*)function)[1] = (jmp & 0xFF);
-    ((char*)function)[2] = (jmp & 0xFF00) >> 8;
-    ((char*)function)[3] = (jmp & 0xFF0000) >> 16;
-    ((char*)function)[4] = jmp >> 24;
-
-    set_addr_ro(function);
+    write_no_prot(function, &the_jump, tmp->first_instructions_size);
 #else
-# error architecture not yet supported
+# error architecture not supported yet
 #endif
 }
 
@@ -103,11 +101,9 @@ void unhijack(void *function)
         return;
     }
 
-    set_addr_rw(function);
 #if defined(CONFIG_X86)
-    memcpy(function, tmp->first_instructions, tmp->first_instructions_size);
+    write_no_prot(function, tmp->first_instructions, tmp->first_instructions_size);
 #else
-# error architecture not yet supported
+# error architecture not supported yet
 #endif
-    set_addr_ro(function);
 }

