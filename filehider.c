@@ -98,6 +98,7 @@ static int thor_fs_iterate(struct file *file, struct dir_context *ctx)
     return ret;
 }
 #endif
+
 static int thor_fs_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)
 {
