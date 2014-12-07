@@ -46,6 +46,9 @@ target kernel. Or you could simply change the `Makefile`.
        echo hu6s PORT > /proc/thor     (hide udp6 socket)
        echo uu6s PORT > /proc/thor     (unhide udp6 socket)
        echo uu6a      > /proc/thor     (unhide all udp6 sockets)
+       echo hm MODULE > /proc/thor     (hide module)
+       echo um MODULE > /proc/thor     (unhide module)
+       echo uma       > /proc/thor     (unhide all modules)
        echo root      > /proc/thor     (gain root privileges)
 
 ## Acknowledgement
