@@ -1,7 +1,9 @@
 #ifndef PROCFILE_H
 #define PROCFILE_H
 
-#define THOR_PROCFILE "thor"
+#include "module.h"
+
+#define THOR_PROCFILE THOR_MODULENAME
 
 /* entry for /proc/thor */
 extern struct proc_dir_entry *procfile;

