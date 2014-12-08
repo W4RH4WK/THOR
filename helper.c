@@ -49,7 +49,7 @@ void write_no_prot(void *addr, void *data, int len)
         mem_text_write_kernel_word(target_arm + i, *(code_arm + i));
     }
 # else
-    memcpy(addr, code, len);
+    memcpy(addr, data, len);
     cacheflush(addr, len);
 # endif
 #else
