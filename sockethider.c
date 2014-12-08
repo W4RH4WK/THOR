@@ -174,7 +174,7 @@ static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
         }
     }
 
-    return 0;
+    return ret;
 }
 
 static int thor_tcp6_seq_show(struct seq_file *seq, void *v)
@@ -202,7 +202,7 @@ static int thor_tcp6_seq_show(struct seq_file *seq, void *v)
         }
     }
 
-    return 0;
+    return ret;
 }
 
 static int thor_udp4_seq_show(struct seq_file *seq, void *v)
@@ -230,7 +230,7 @@ static int thor_udp4_seq_show(struct seq_file *seq, void *v)
         }
     }
 
-    return 0;
+    return ret;
 }
 
 static int thor_udp6_seq_show(struct seq_file *seq, void *v)
@@ -258,7 +258,7 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
         }
     }
 
-    return 0;
+    return ret;
 }
 
 void add_to_tcp4_list(int port)
