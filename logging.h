@@ -1,9 +1,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#define THOR_DEBUG 1
-
-#define LOG_TAG "THOR: "
+#include "config.h"
 
 #if THOR_DEBUG
 #   define LOG_DEBUG(format, args...) \

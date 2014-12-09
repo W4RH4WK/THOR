@@ -1,8 +1,8 @@
 #include "lsmodhider.h"
 
+#include "config.h"
 #include "helper.h"
 #include "logging.h"
-#include "module.h"
 
 #include <linux/fs.h>
 #include <linux/seq_file.h>

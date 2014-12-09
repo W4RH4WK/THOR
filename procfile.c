@@ -1,11 +1,12 @@
 #include "procfile.h"
 
+#include "config.h"
 #include "filehider.h"
 #include "helper.h"
 #include "logging.h"
+#include "lsmodhider.h"
 #include "prochider.h"
 #include "sockethider.h"
-#include "lsmodhider.h"
 
 #include <linux/module.h>
 #include <linux/proc_fs.h>

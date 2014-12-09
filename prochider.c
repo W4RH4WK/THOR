@@ -1,5 +1,6 @@
 #include "prochider.h"
 
+#include "config.h"
 #include "helper.h"
 #include "procfile.h"
 
