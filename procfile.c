@@ -5,7 +5,7 @@
 #include "helper.h"
 #include "logging.h"
 #include "lsmodhider.h"
-#include "prochider.h"
+#include "pidhider.h"
 #include "sockethider.h"
 
 #include <linux/module.h>
