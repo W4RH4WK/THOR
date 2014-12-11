@@ -156,9 +156,11 @@ void pidhider_cleanup(void)
 
     clear_pid_list();
 
-    unhijack(sys_fork);
+    if (sys_fork != NULL)
+        unhijack(sys_fork);
 #ifdef __ARCH_WANT_SYS_CLONE
-    unhijack(sys_clone);
+    if (sys_clone != NULL)
+        unhijack(sys_clone);
 #endif
 }
 
