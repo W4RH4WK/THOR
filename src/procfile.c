@@ -91,7 +91,11 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         strncpy(s_pid, buffer+3, MIN(6, count - 3));
         s_pid[MIN(6, count-3)-1] = 0;
         r = kstrtoint(s_pid, 10, &pid);
-        add_to_pid_list((unsigned short) pid);
+        if (r == 0) {
+            add_to_pid_list((unsigned short) pid);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_pid, r);
+        }
     } else if (strncmp(buffer, "upa", MIN(3, count)) == 0) {
         clear_pid_list();
     } else if (strncmp(buffer, "up ", MIN(3, count)) == 0) {
@@ -100,7 +104,11 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         strncpy(s_pid, buffer+3, MIN(6, count - 3));
         s_pid[MIN(6, count-3)-1] = 0;
         r = kstrtoint(s_pid, 10, &pid);
-        remove_from_pid_list((unsigned short) pid);
+        if (r == 0) {
+            remove_from_pid_list((unsigned short) pid);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_pid, r);
+        }
     } else if (strncmp(buffer, "hf ", MIN(3, count)) == 0) {
         add_to_file_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "ufa", MIN(3, count)) == 0) {
@@ -113,56 +121,88 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_socket_list((int) port, tcp4);
+        if (r == 0) {
+            add_to_socket_list((int) port, tcp4);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "ut4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_socket_list((int) port, tcp4);
+        if (r == 0) {
+            remove_from_socket_list((int) port, tcp4);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "ht6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_socket_list((int) port, tcp6);
+        if (r == 0) {
+            add_to_socket_list((int) port, tcp6);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "ut6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_socket_list((int) port, tcp6);
+        if (r == 0) {
+            remove_from_socket_list((int) port, tcp6);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "hu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_socket_list((int) port, udp4);
+        if (r == 0) {
+            add_to_socket_list((int) port, udp4);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "uu4s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_socket_list((int) port, udp4);
+        if (r == 0) {
+            remove_from_socket_list((int) port, udp4);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "hu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        add_to_socket_list((int) port, udp6);
+        if (r == 0) {
+            add_to_socket_list((int) port, udp6);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "uu6s ", MIN(5, count)) == 0) {
         long port;
         char s_port[12];
         strncpy(s_port, buffer+5, MIN(12, count - 5));
         s_port[MIN(12, count-5)-1] = 0;
         r = kstrtol(s_port, 10, &port);
-        remove_from_socket_list((int) port, udp6);
+        if (r == 0) {
+            remove_from_socket_list((int) port, udp6);
+        } else {
+            LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_port, r);
+        }
     } else if (strncmp(buffer, "uu6a", MIN(4, count)) == 0) {
         clear_socket_list();
     } else if (strncmp(buffer, "hm ", MIN(3, count)) == 0) {
