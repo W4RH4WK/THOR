@@ -10,15 +10,15 @@ int pidhider_init(void);
 void pidhider_cleanup(void);
 
 /* add pid to hiding list */
-void add_to_pid_list(const char *name, unsigned int len);
+void add_to_pid_list(const unsigned short pid);
 
 /* remove pid from hiding list */
-void remove_from_pid_list(const char *name, unsigned int len);
+void remove_from_pid_list(const unsigned short pid);
 
 /* clear hiding list */
 void clear_pid_list(void);
 
 /* check if pid is hidden */
-bool is_pid_hidden(const char *name);
+bool is_pid_hidden(const unsigned short pid);
 
 #endif

