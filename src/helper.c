@@ -93,8 +93,10 @@ void flush_tlb_kernel_page(unsigned long kaddr)
         struct tlb_args ta;
         ta.ta_start = kaddr;
         on_each_cpu(ipi_flush_tlb_kernel_page, &ta, 1);
-    } else
+    } else {
         __flush_tlb_kernel_page(kaddr);
+    }
+
     /* XXX */
     /*broadcast_tlb_a15_erratum();*/
 }
@@ -108,12 +110,12 @@ void mem_text_address_writeable(unsigned long addr)
 
     mem_unprotect.made_writeable = 0;
 
-/*  removed because we actually want to write to non text sections */
-/*
-    if ((addr < (unsigned long)RX_AREA_START) ||
-        (addr >= (unsigned long)RX_AREA_END))
-        return;
-*/
+    /*
+     * removed because we actually want to write to non text sections
+     * if ((addr < (unsigned long)RX_AREA_START) ||
+     *     (addr >= (unsigned long)RX_AREA_END))
+     *     return;
+     */
 
     mem_unprotect.pmd = pmd_offset(pud, addr);
     mem_unprotect.pmd_to_flush = mem_unprotect.pmd;
@@ -181,16 +183,16 @@ void cacheflush ( void *begin, unsigned long size )
 void write_no_prot(void *addr, void *data, int len)
 {
 #if defined(CONFIG_X86)
-    // TODO: set_addr_rw/ro on actual len
+    /* TODO: set_addr_rw/ro on actual len */
     set_addr_rw(addr);
     memcpy(addr, data, len);
-    // TODO: don't set ro if page was rw before?
+    /* TODO: don't set ro if page was rw before? */
     set_addr_ro(addr);
 #elif defined(CONFIG_ARM)
 # if defined(CONFIG_STRICT_MEMORY_RWX)
     unsigned long flags;
     mem_text_writeable_spinlock(&flags);
-    // TODO: mem_text_address_writeable on actual len
+    /* TODO: mem_text_address_writeable on actual len */
     mem_text_address_writeable((unsigned long)addr);
     memcpy(addr, data, len);
     cacheflush(addr, len);
@@ -204,4 +206,3 @@ void write_no_prot(void *addr, void *data, int len)
 # error architecture not supported yet
 #endif
 }
-

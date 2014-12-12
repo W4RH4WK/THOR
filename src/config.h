@@ -12,4 +12,3 @@
 #define LOG_TAG "THOR: "
 
 #endif
-

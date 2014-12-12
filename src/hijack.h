@@ -18,4 +18,3 @@ void hijack(void *function, void *new_function);
 void unhijack(void *function);
 
 #endif
-

@@ -60,7 +60,7 @@ void hijack(void *orig_function, void *new_function)
 #endif
 
     list_for_each_entry(tmp, &(hijack_list.list), list) {
-        if(tmp->function == function) {
+        if (tmp->function == function) {
             found = true;
             break;
         }
@@ -73,10 +73,9 @@ void hijack(void *orig_function, void *new_function)
 #if defined(CONFIG_X86)
         tmp->first_instructions_size = 5;
 #elif defined(CONFIG_ARM)
-        if(is_thumb) {
+        if (is_thumb) {
             tmp->first_instructions_size = 16;
-        }
-        else {
+        } else {
             tmp->first_instructions_size = 8;
         }
 #else
@@ -111,10 +110,9 @@ void hijack(void *orig_function, void *new_function)
 
         tj[6] = ((uint32_t)new_function & 0x0000FFFF);
         tj[7] = ((uint32_t)new_function >> 16);
-    }
-    else {
+    } else {
         /* ARM */
-        the_jump[0] = (uint32_t) 0xE51FF004; // ldr pc, [pc, -#4]
+        the_jump[0] = (uint32_t) 0xE51FF004; /* ldr pc, [pc, -#4] */
         the_jump[1] = (uint32_t) new_function;
     }
 #else
@@ -150,4 +148,3 @@ void unhijack(void *function)
 
     write_no_prot(function, tmp->first_instructions, tmp->first_instructions_size);
 }
-

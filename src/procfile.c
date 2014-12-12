@@ -35,7 +35,7 @@ static struct file_operations procfile_fops = {
 
 int procfile_init(void)
 {
-    // allocate file in proc
+    /* allocate file in proc */
     procfile = proc_create(THOR_PROCFILE, 0666, NULL, &procfile_fops);
     if (procfile == NULL) {
         LOG_ERROR("could not create proc entry");

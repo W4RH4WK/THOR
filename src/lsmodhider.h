@@ -17,4 +17,3 @@ void remove_from_module_list(const char *name, unsigned int len);
 void clear_module_list(void);
 
 #endif
-

