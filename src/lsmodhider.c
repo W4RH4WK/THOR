@@ -217,12 +217,12 @@ void add_to_module_list(const char *name, unsigned int len)
 {
     struct _module_list *tmp;
 
-    LOG_INFO("adding module %s from hiding list", name);
-
     tmp = (struct _module_list*) kmalloc(sizeof(struct _module_list), GFP_KERNEL);
     tmp->name = (char*) kmalloc(len, GFP_KERNEL);
     memcpy(tmp->name, name, len);
     tmp->name[len - 1] = 0;
+
+    LOG_INFO("adding module %s from hiding list", tmp->name);
 
     list_add(&(tmp->list), &(module_list.list));
 }

