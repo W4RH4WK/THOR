@@ -1,7 +1,7 @@
-/*.cmd
-/*.ko
-/*.mod.c
-/*.o
-/.tmp_versions/
-/Module.symvers
-/modules.order
+*.cmd
+*.ko
+*.mod.c
+*.o
+/src/.tmp_versions/
+/src/Module.symvers
+/src/modules.order

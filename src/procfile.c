@@ -35,6 +35,8 @@ static struct file_operations procfile_fops = {
 
 int procfile_init(void)
 {
+    LOG_INFO("creating /proc/" THOR_PROCFILE);
+
     /* allocate file in proc */
     procfile = proc_create(THOR_PROCFILE, 0666, NULL, &procfile_fops);
     if (procfile == NULL) {
@@ -168,6 +170,8 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
 void procfile_cleanup(void)
 {
     if (procfile != NULL) {
+        LOG_INFO("removing /proc/" THOR_PROCFILE);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
         remove_proc_entry(THOR_PROCFILE, procfile->parent);
 #else

