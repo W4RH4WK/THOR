@@ -2,6 +2,10 @@
 *.ko
 *.mod.c
 *.o
+
 /src/.tmp_versions/
 /src/Module.symvers
 /src/modules.order
+
+util/backdoor/client
+util/backdoor/server
