@@ -8,6 +8,12 @@
 /src/modules.order
 
 util/backdoor/client
+util/backdoor/client.crt
+util/backdoor/client.key
+util/backdoor/client.pem
 util/backdoor/server
+util/backdoor/server.crt
+util/backdoor/server.key
+util/backdoor/server.pem
 
 util/getroot/getroot

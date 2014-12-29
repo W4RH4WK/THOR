@@ -51,6 +51,7 @@ target kernel. Or you could simply change the `Makefile`.
 ## Acknowledgement
 
 - [Arkadiusz "ivyl" Hiler](https://github.com/ivyl/rootkit)
-- [Morgan "mrrrgn" Phillips](https://github.com/mrrrgn/simple-rootkit)
-- [uzyszkodnik](https://github.com/uzyszkodnik/rootkit)
 - [Michael "mncoppola" Coppola] (https://github.com/mncoppola/suterusu)
+- [Morgan "mrrrgn" Phillips](https://github.com/mrrrgn/simple-rootkit)
+- [XieRan](https://github.com/nareix/tls-example)
+- [uzyszkodnik](https://github.com/uzyszkodnik/rootkit)
