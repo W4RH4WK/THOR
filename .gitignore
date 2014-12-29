@@ -9,3 +9,5 @@
 
 util/backdoor/client
 util/backdoor/server
+
+util/getroot/getroot
