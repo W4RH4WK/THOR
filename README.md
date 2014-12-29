@@ -28,25 +28,16 @@ target kernel. Or you could simply change the `Makefile`.
 ## How to Use
 
     usage:
-       echo hp PID    > /proc/thor     (hides process PID)
-       echo up PID    > /proc/thor     (unhides process PID)
-       echo upa       > /proc/thor     (unhide all PIDs)
-       echo hf FILE   > /proc/thor     (hide file FILE)
-       echo uf FILE   > /proc/thor     (unhide file FILE)
-       echo ufa       > /proc/thor     (unhide all files)
-       echo ht4s PORT > /proc/thor     (hide tcp4 socket)
-       echo ut4s PORT > /proc/thor     (unhide tcp4 socket)
-       echo ht6s PORT > /proc/thor     (hide tcp6 socket)
-       echo ut6s PORT > /proc/thor     (unhide tcp6 socket)
-       echo hu4s PORT > /proc/thor     (hide udp4 socket)
-       echo uu4s PORT > /proc/thor     (unhide udp4 socket)
-       echo hu6s PORT > /proc/thor     (hide udp6 socket)
-       echo uu6s PORT > /proc/thor     (unhide udp6 socket)
-       echo usa       > /proc/thor     (unhide all sockets)
-       echo hm MODULE > /proc/thor     (hide module)
-       echo um MODULE > /proc/thor     (unhide module)
-       echo uma       > /proc/thor     (unhide all modules)
-       echo root      > /proc/thor     (gain root privileges)
+       echo hp PID    > /proc/thor (hides process PID)
+       echo up PID    > /proc/thor (unhides process PID)
+       echo upa       > /proc/thor (unhide all PIDs)
+       echo hf FILE   > /proc/thor (hide file FILE)
+       echo uf FILE   > /proc/thor (unhide file FILE)
+       echo ufa       > /proc/thor (unhide all files)
+       echo hm MODULE > /proc/thor (hide module)
+       echo um MODULE > /proc/thor (unhide module)
+       echo uma       > /proc/thor (unhide all modules)
+       echo root      > /proc/thor (gain root privileges)
 
 ## Acknowledgement
 
