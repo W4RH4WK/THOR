@@ -52,6 +52,22 @@ fontfamily=fdm,fontsize=\fontsize{7}{8.5}}
 \newcommand{\NormalTok}[1]{{#1}}
 \DeclareCaptionFormat{plain}{#3}
 
+\AtBeginPart{
+  \let\insertpartnumber\relax
+  \let\partname\relax
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \let\insertsectionnumber\relax
+  \let\sectionname\relax
+  \frame{\sectionpage}
+}
+\AtBeginSubsection{
+  \let\insertsubsectionnumber\relax
+  \let\subsectionname\relax
+  \frame{\subsectionpage}
+}
+
 $for(header-includes)$
 $header-includes$
 $endfor$
