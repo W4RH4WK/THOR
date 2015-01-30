@@ -206,3 +206,17 @@ void write_no_prot(void *addr, void *data, int len)
 # error architecture not supported yet
 #endif
 }
+
+int strendcmp(const char *str, const char *suffix)
+{
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+
+    if (lensuffix > lenstr) {
+        return -1;
+    }
+
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix);
+}
+
+

