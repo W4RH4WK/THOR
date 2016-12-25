@@ -36,6 +36,11 @@ target kernel. Or you could simply change the `Makefile`.
        echo uma       > /proc/thor (unhide all modules)
        echo root      > /proc/thor (gain root privileges)
 
+## Authors
+
+- Franz-Josef Haider
+- Alex Hirsch
+
 ## Acknowledgement
 
 - [Arkadiusz "ivyl" Hiler](https://github.com/ivyl/rootkit)
