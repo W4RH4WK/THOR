@@ -1,7 +1,7 @@
 # THOR
 
 The Horrific Omnipotent Rootkit - or something like that, targeted at kernel
-3.14 (archlinux LTS at the time of writing).
+3.17 (archlinux LTS at the time of writing).
 
 ## Requirements
 
@@ -44,7 +44,7 @@ target kernel. Or you could simply change the `Makefile`.
 ## Acknowledgement
 
 - [Arkadiusz "ivyl" Hiler](https://github.com/ivyl/rootkit)
-- [Michael "mncoppola" Coppola] (https://github.com/mncoppola/suterusu)
+- [Michael "mncoppola" Coppola](https://github.com/mncoppola/suterusu)
 - [Morgan "mrrrgn" Phillips](https://github.com/mrrrgn/simple-rootkit)
 - [XieRan](https://github.com/nareix/tls-example)
 - [uzyszkodnik](https://github.com/uzyszkodnik/rootkit)
